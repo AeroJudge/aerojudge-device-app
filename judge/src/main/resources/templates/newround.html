@@ -233,6 +233,7 @@
 
 <script src="jquery-3.6.4.min.js"></script>
 <script src="materialize/js/materialize.js"></script>
+<script src="fab-sync-feedback.js"></script>
 <script th:inline="javascript">
   /*<![CDATA[*/
   M.AutoInit();
@@ -438,21 +439,25 @@
   }
 
   async function syncPilots() {
+    AeroJudgeFabSyncFeedback.start();
     try {
       await $.ajax({
         url: '/api/pilots/sync',
       });
 
-      M.toast({ html: 'Pilot/Sequence Sync Success', displayLength: 5000 });
+      M.toast({ html: 'Pilot/Sequence Sync Success', classes: 'toastMessage', displayLength: 5000 });
+      AeroJudgeFabSyncFeedback.finish();
 
       await delay(4000);
       window.location.replace('/validate-sequences');
     } catch (errMsg) {
-      M.toast({ html: 'Pilot Sync Error - Is Score Available?', classes: 'red', displayLength: 5000 });
+      M.toast({ html: 'Pilot Sync Error - Is Score Available?', classes: 'toastMessage', displayLength: 5000 });
+      AeroJudgeFabSyncFeedback.finish();
     }
   }
 
   async function syncScores() {
+    AeroJudgeFabSyncFeedback.start();
     let payload = null;
     try {
       payload = await $.ajax({
@@ -464,6 +469,7 @@
       // Pre-flight failed - fall through to sync without modal.
     }
     if (payload && payload.mismatches && payload.mismatches.length > 0) {
+      AeroJudgeFabSyncFeedback.finish();
       populateAndOpenSyncMismatchModal(payload);
       return;
     }
@@ -471,12 +477,15 @@
   }
 
   function doActualSync() {
+    AeroJudgeFabSyncFeedback.start();
     $.ajax({ url: '/api/scores/sync' })
       .done(function () {
-        M.toast({ html: 'Scores Sync Success', displayLength: 5000 });
+        M.toast({ html: 'Scores Sync Success', classes: 'toastMessage', displayLength: 5000 });
+        AeroJudgeFabSyncFeedback.finish();
       })
       .fail(function () {
-        M.toast({ html: 'Scores Sync Error - Is Score Available?', classes: 'red', displayLength: 5000 });
+        M.toast({ html: 'Scores Sync Error - Is Score Available?', classes: 'toastMessage', displayLength: 5000 });
+        AeroJudgeFabSyncFeedback.finish();
       });
   }
 

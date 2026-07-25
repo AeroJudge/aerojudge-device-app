@@ -146,6 +146,7 @@
 
   <!--  Scripts-->
   <script src="materialize/js/materialize.js"></script>
+  <script src="fab-sync-feedback.js"></script>
   <script>
     var language = '[[${settings.language}]]';
     var windowHeight = window.innerHeight - 35; // reduce some for banner
@@ -234,21 +235,25 @@
     const delay = ms => new Promise(res => setTimeout(res, ms));
 
     async function syncPilots() {
+      AeroJudgeFabSyncFeedback.start();
       try {
         const response = await $.ajax({
           url: "/api/pilots/sync",
         });
 
         M.toast({ html: 'Pilot/Sequence Sync Success', classes: 'toastMessage', displayLength: 5000 });
+        AeroJudgeFabSyncFeedback.finish();
 
         await delay(4000); // Wait for 4 seconds before validating sequences
         window.location.replace("/validate-sequences");
       } catch (errMsg) {
         M.toast({ html: 'Pilot Sync Error - Is Score Available?', classes: 'toastMessage', displayLength: 5000 });
+        AeroJudgeFabSyncFeedback.finish();
       }
     }
 
     async function syncScores() {
+      AeroJudgeFabSyncFeedback.start();
       let payload = null;
       try {
         payload = await $.ajax({
@@ -260,6 +265,7 @@
         // Pre-flight failed — fall through to sync without modal
       }
       if (payload && payload.mismatches && payload.mismatches.length > 0) {
+        AeroJudgeFabSyncFeedback.finish();
         populateAndOpenSyncMismatchModal(payload);
         return;
       }
@@ -267,12 +273,15 @@
     }
 
     function doActualSync() {
+      AeroJudgeFabSyncFeedback.start();
       $.ajax({ url: '/api/scores/sync' })
         .done(function () {
           M.toast({ html: 'Scores Sync Success', classes: 'toastMessage', displayLength: 5000 });
+          AeroJudgeFabSyncFeedback.finish();
         })
         .fail(function () {
           M.toast({ html: 'Scores Sync Error - Is Score Available?', classes: 'toastMessage', displayLength: 5000 });
+          AeroJudgeFabSyncFeedback.finish();
         });
     }
 
