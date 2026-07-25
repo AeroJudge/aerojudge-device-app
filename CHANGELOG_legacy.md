@@ -28,7 +28,7 @@ All notable changes to the AeroJudge App will be documented in this file.
   hides pilots once their active round score is complete.
 - **Round completion flow** (`/round-complete`): Clear completion state after an active RBR
   cohort is finished, with the next action returning to round selection.
-- **Active Round Repair** (`/admin`): Admin landing tile for clearing a mistaken unscored
+- **Clear Active Round** (`/admin`): Admin landing tile for clearing a mistaken unscored
   active round. The tile only appears when an active round exists and no scores have been
   recorded for that round.
 
@@ -59,7 +59,7 @@ All notable changes to the AeroJudge App will be documented in this file.
   round cannot leak into the next competition.
 
 The RBR implementation is split across small commits for state persistence, routing guards,
-round selection, active queue filtering, score submission guarding, completion, admin repair,
+round selection, active queue filtering, score submission guarding, completion, clear-active-round,
 flightline cleanup, event reset, and field UX polish.
 
 ---

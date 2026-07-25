@@ -62,11 +62,11 @@
       color: #263238;
       margin: 0 0 12px;
     }
-    .repair-tile {
+    .clear-active-round-tile {
       border-color: #ef6c00;
       background: #fff3e0;
     }
-    .admin-tile-link:active .repair-tile {
+    .admin-tile-link:active .clear-active-round-tile {
       background: #ffe0b2;
     }
   </style>
@@ -91,10 +91,10 @@
       <p class="event-line" th:text="${compName}"></p>
 
       <a href="#clearActiveRoundModal" class="admin-tile-link modal-trigger" th:if="${activeRoundCanClear}">
-        <div class="admin-tile repair-tile">
-          <div class="admin-tile-title">Active Round Repair</div>
+        <div class="admin-tile clear-active-round-tile">
+          <div class="admin-tile-title">Clear Active Round</div>
           <div class="admin-tile-text">
-            Clear mistaken active round: <strong th:text="${activeRoundLabel}"></strong>
+            Cancel mistaken round start: <strong th:text="${activeRoundLabel}"></strong>
           </div>
           <div class="admin-tile-text">
             Only works if no scores exist for this round.
