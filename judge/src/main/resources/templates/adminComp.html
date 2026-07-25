@@ -216,6 +216,7 @@
     const isCurrentComp = /*[[${isCurrentComp}]]*/ false;
     const maxSeqPerRound = /*[[${maxSeqPerRound}]]*/ 2;
     const sequenceType = /*[[${sequenceType}]]*/ 'std';
+    const scoreMode = /*[[${scoreMode}]]*/ 'global';
 
     document.addEventListener('DOMContentLoaded', function () {
       // Initialize floating action button
@@ -316,7 +317,7 @@
         type: "POST",
         url: "/api/comp?edit=true",
         data: JSON.stringify({
-          score_mode: 'global',
+          score_mode: scoreMode,
           sequences: sequences,
           unknown_sequences: 1,
           sequenceType: seqType
@@ -365,7 +366,7 @@
         type: "POST",
         url: "/api/comp?edit=false",
         data: JSON.stringify({
-          score_mode: 'global',
+          score_mode: scoreMode,
           sequences: sequences,
           unknown_sequences: 1,
           sequenceType: seqType
