@@ -490,9 +490,20 @@ Recreation rules — **these matter, read carefully**:
 
 ### 6d. Releases and assets
 
-Phase 0 found **29 releases with 65 assets totalling 3.38 GB** — Section 1 originally assumed
-there were none. A mirror push carries tags but **never** release notes or binary assets, so
-these must be recreated deliberately.
+**BOTH source repos publish releases. Probe both.** Phase 0 originally probed only
+`IMAC-ORG/imac-judge-app` and reported 29 releases — it hardcoded the source repo and never
+looked at the snapshot, which has **22 more**, including `v26.1.1`–`v26.1.4`, the newest
+shipping versions. The preflight reported PASS with those missing. Corrected 2026-07-30.
+
+| Source | Releases | Assets migrated |
+|---|---|---|
+| `IMAC-ORG/imac-judge-app` | 29 | 64 (1.61 GB) — one excluded, see below |
+| `dpgarceau/TEMP_aj-device-app_migration` | 22 | 66 (0.77 GB) — none excluded |
+| **Destination total** | **51** | **130 (2.38 GB)** |
+
+Section 1 originally assumed there were no releases at all. A mirror push carries tags but
+**never** release notes or binary assets, so these must be recreated deliberately.
+`phase2d-releases.sh` takes `SRC_REPO` and is run once per source repo.
 
 **Operator decision (2026-07-30): recreate all 29 releases with notes and assets, with exactly
 one exclusion.**
@@ -755,7 +766,7 @@ section and the phases above disagree, **this section is what happened.**
 | Tags | **84** (58 from source + 26 from snapshot, disjoint sets) |
 | Root commits | **1** |
 | `main` | `f3492464e6044ec9f26e3f957927d3fb048876d6` |
-| Releases | **29**, with **64 assets / 1.61 GB** |
+| Releases | **51**, with **130 assets / 2.38 GB** (29 from source + 22 from snapshot) |
 | Labels / milestones | 11 / 1 |
 | Issues | 13 hand-written by the operator; history archived as JSON, not recreated |
 
@@ -770,7 +781,8 @@ section and the phases above disagree, **this section is what happened.**
 | 4 — union push, real | `phase1-union-push.sh AeroJudge/aerojudge-device-app` | pushed |
 | 3 — verify real | `phase3-verify.sh` | **17/17 PASS** |
 | — | `gh repo delete AeroJudge/migration-dryrun` | dry run removed |
-| 2d — releases | `phase2d-releases.sh` | 29/29 releases, 64/64 assets, byte-identical |
+| 2d — releases (source) | `phase2d-releases.sh` | 29/29 releases, 64/64 assets, byte-identical |
+| 2d — releases (snapshot) | `SRC_REPO=… phase2d-releases.sh` | 22/22 releases, 66/66 assets, byte-identical |
 | 2a/2b — metadata | `phase2-metadata.sh` | labels + milestone + archive + render gate |
 | 2b — issue creation | *not run* | dropped by decision |
 
@@ -786,7 +798,7 @@ single most useful thing about the process and the reason Phase 0 exists.
 | `8afe8c6` is the integration base | An ordinary mid-range commit that exists only in the snapshot; needs no special handling |
 | The rename PR is a substantial job | Already done by the newer commits; the 9 surviving old-name lines across 5 files are intentional prose about project history |
 | Mirroring one repo suffices | **Neither repo alone is complete.** 3 commits live only on two abandoned 2023 source branches, and all 58 source tags exist only in the source |
-| No releases, no packages | **29 releases, 65 assets, 3.38 GB**, actively downloaded (1,267 times) |
+| No releases, no packages | **51 releases across both repos**, 130 assets migrated (2.38 GB), actively downloaded |
 | Destination must be created | It already existed — created 2026-05-20, empty, private |
 | Fork PRs need ref promotion before dropping `refs/pull` | 0 fork PRs, and all 7 closed-unmerged heads already reachable in the union. No-op |
 
@@ -804,6 +816,15 @@ single most useful thing about the process and the reason Phase 0 exists.
    ref it processes — alphabetically, so `admin-pages-overhaul` beat `main`. A `gh repo edit`
    issued immediately after the push returned exit 0 and *silently lost the race*. Fixed with
    set → verify → retry ×5 → hard fail. **Caught only because the dry run was verified.**
+
+4. **Phase 0 probed releases on one repo only.** The preflight hardcoded
+   `IMAC-ORG/imac-judge-app` for the releases check, so it missed the snapshot's **22
+   releases** — including `v26.1.1`–`v26.1.4`, the current shipping versions — and still
+   reported **PASS**. Everywhere else in this migration both repos were treated as co-equal
+   sources; releases were the one place that assumption was not applied. Found only after the
+   first release run, while checking an unrelated question about workflow permissions on the
+   snapshot repo. Fixed by parameterising `SRC_REPO` and running the script once per source.
+   **Lesson: when a migration has two sources, every per-repo probe must loop over both.**
 
 ### Deliberate deviations from the plan above
 

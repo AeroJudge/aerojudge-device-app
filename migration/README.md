@@ -5,8 +5,8 @@ one alone was complete:
 
 | Source | Contributed |
 |---|---|
-| `IMAC-ORG/imac-judge-app` | full history, 58 tags, 2 abandoned 2023 branches, all issue/PR/release metadata |
-| `dpgarceau/TEMP_aj-device-app_migration` | `main` (96 commits ahead, 0 behind), 26 tags |
+| `IMAC-ORG/imac-judge-app` | full history, 58 tags, 2 abandoned 2023 branches, all issue/PR metadata, 29 releases |
+| `dpgarceau/TEMP_aj-device-app_migration` | `main` (96 commits ahead, 0 behind), 26 tags, 22 releases |
 
 A native GitHub transfer was not possible — the only admin on `IMAC-ORG` is unreachable — so
 this was a mirror-based migration of the **union** of both repos. Commit SHAs, authorship,
@@ -25,7 +25,7 @@ dates and signatures are preserved exactly; no history was rewritten at any poin
 ## Final state
 
 488 commits · 4 branches · 84 tags · 1 root · `main` = `f3492464e6044ec9f26e3f957927d3fb048876d6`
-29 releases with 64 assets (1.61 GB) · 11 labels · 1 milestone
+51 releases with 130 assets (2.38 GB) · 11 labels · 1 milestone
 
 ## `archive/` — what was *not* recreated
 
@@ -39,7 +39,8 @@ The complete history is preserved here instead:
 |---|---|
 | `archive/issues.json` | all 45 issues (14 open, 31 closed) with bodies, comments, labels, milestones, authors, timestamps |
 | `archive/pulls.json` | all 77 pull requests (1 open, 69 merged, 7 closed-unmerged) |
-| `archive/releases.json` | all 29 releases including every asset URL |
+| `archive/releases-IMAC-ORG_imac-judge-app.json` | the source repo's 29 releases, including every asset URL |
+| `archive/releases-dpgarceau_TEMP_aj-device-app_migration.json` | the snapshot repo's 22 releases (`v1.0.2`, `v5.1.x`, `v26.1.x`) |
 | `archive/rendered/` | 122 human-readable markdown renderings of the above |
 
 `@mentions` and `#refs` throughout `archive/rendered/` are escaped as `@<!---->name`, which

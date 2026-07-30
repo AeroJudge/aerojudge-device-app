@@ -12,10 +12,14 @@
 # Verifies every uploaded asset's byte size against the source.
 set -uo pipefail
 
-SRC=IMAC-ORG/imac-judge-app
+# BOTH source repos publish releases. The original Phase 0 only probed IMAC-ORG and missed the
+# snapshot's 22 releases (v1.0.2, v5.1.x, v26.1.x) — including the newest shipping versions.
+# Run this script once per source repo.
+SRC="${SRC_REPO:-IMAC-ORG/imac-judge-app}"
+SRC_SLUG=$(echo "$SRC" | tr '/' '_')
 TARGET="${1:-}"
 DRY="${2:-}"
-[ -z "$TARGET" ] && { echo "usage: $0 <owner/repo> [--dry]"; exit 2; }
+[ -z "$TARGET" ] && { echo "usage: SRC_REPO=<owner/repo> $0 <owner/repo> [--dry]"; exit 2; }
 
 SKIP_BYTES=1000000000        # assets larger than this are excluded by operator decision
 
@@ -33,7 +37,7 @@ echo "=== Phase 2d — releases -> $TARGET ($TS) ==="
 
 # ---------- 1. archive first, always. this is the record, not best-effort ----------
 echo "archiving release metadata"
-gh api "repos/$SRC/releases" --paginate > "$ARCHIVE/releases.json" || { echo "FATAL: archive failed"; exit 1; }
+gh api "repos/$SRC/releases" --paginate > "$ARCHIVE/releases-$SRC_SLUG.json" || { echo "FATAL: archive failed"; exit 1; }
 gh api "repos/$SRC/releases" --paginate \
   --jq '.[]|[.tag_name,(.name // .tag_name),(.prerelease|tostring),(.draft|tostring),.published_at]|@tsv' \
   > "$WORK/manifest.tsv" || { echo "FATAL: manifest failed"; exit 1; }
