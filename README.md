@@ -2,32 +2,32 @@
 
 ## Project Direction
 
-This repository was prepared to become the new home of AeroJudge Device Software: as part of the official AeroJudge Scoring System. 
+AeroJudge Device App is the device-side application for the official
+AeroJudge Scoring System.
 
-The forward path has two main goals:
+Current development focuses on the AeroJudge Device product from serial number DPG-100 and above containing PCB3.6x and later.
 
-1. Rename and re-version the application as AeroJudge Device App / AeroJudge Device so it is clearly distinct from previous AeroJudge developmemnt projects.
-2. Align setup scripts, device configuration, and hardware support with the current physical AeroJudge Device product.
+1. Maintain the AeroJudge Device App / AeroJudge Device product identity,
+   package namespace, release versioning, and update process.
+2. Keep setup scripts, device configuration, and hardware support aligned with
+   current production AeroJudge Device hardware.
 
 Changes will be made through focused branches and reviewed before merging to `main`. The intent is to avoid broad live edits on `main` and keep identity, release, setup, and hardware changes separated enough to review safely.
 
-## Project Origin
+## Repository History
 
-AeroJudge Device App is a continuation of the former IMAC Judge App maintained at https://github.com/IMAC-ORG/imac-judge-app.
+AeroJudge Device App continues the work that originated as SA-Pi-Score and the IMAC Judge App. The
+final AeroJudge repository preserves the project commit and tag history while
+moving the active product identity, package namespace, release process, and
+setup path to AeroJudge Device App.
 
-The AeroJudge repository starts from a clean import after package, build, script, and branding updates. Its transition point from the legacy repository is commit `8afe8c603a5140964fed9d7897ab8b53aea4d9b5` (`v2.1.2-rc3-38-g8afe8c6`).
-
-## Legacy IMAC-ORG Archive Plan
-
-The legacy IMAC-ORG code path should be preserved as an archive or mirror so it is not lost if the upstream repository changes or disappears.
-
-That archive is for preservation and reference. This repository's `main` branch should not actively maintain legacy IMAC-ORG derived hardware support unless a specific future decision changes that policy.
-
-Legacy builders and older hardware should continue to use the legacy IMAC-ORG code path. Current AeroJudge Device App work should target current official AeroJudge Device hardware.
+Historical migration details are recorded in [`migration/README.md`](migration/README.md).
+Those files document the one-time repository assembly and preserved metadata;
+they are not part of the normal development workflow.
 
 ## Device Setup
 
-Current AeroJudge Device setup instructions are maintained in
+Current production AeroJudge Device setup instructions are maintained in
 [`scripts/README.md`](scripts/README.md). The current production setup path uses
 `scripts/judge_setup.sh` for AeroJudge Device serial `DPG-110` and above with
 PCB revision `3.61+`.
@@ -35,14 +35,14 @@ PCB revision `3.61+`.
 
 ## Developer Environment
 
-## Requirements
+### Requirements
 
 1. VSCode
 2. Docker Desktop
 3. Score >= v4.71 with services enabled and started
 4. Java 17 or later (Java 21 works fine)
 
-## Run AeroJudge Device App Locally
+### Run AeroJudge Device App Locally
 
 1. Create or edit `/var/opt/judge/settings.json` with the correct Score host
    and port.
@@ -70,7 +70,7 @@ cd judge
 
 3. Open <http://localhost:8080> in a local browser.
 
-## Build AeroJudge Device App
+### Build AeroJudge Device App
 
 To build the application package:
 
@@ -91,7 +91,7 @@ cp judge/target/judge-26.1.0.jar /var/opt/judge/bin/judge.jar
 GitHub release automation publishes stable asset names: `judge.jar`,
 `figures.zip`, and `volume_service.zip`.
 
-## Run AeroJudge Device App In Docker
+### Run AeroJudge Device App In Docker
 
 1. Build the application package:
 

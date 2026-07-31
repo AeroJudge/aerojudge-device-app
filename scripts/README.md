@@ -42,15 +42,6 @@ export AEROJUDGE_RELEASE_API_URL="https://api.github.com/repos/<owner>/<repo>/re
 ./build_aerojudge.sh
 ```
 
-For the current temporary migration repository, use `main`:
-
-```sh
-cd /home/judge
-export AEROJUDGE_RAW_BASE_URL="https://raw.githubusercontent.com/dpgarceau/TEMP_aj-device-app_migration/refs/heads/main"
-export AEROJUDGE_RELEASE_API_URL="https://api.github.com/repos/dpgarceau/TEMP_aj-device-app_migration/releases/latest"
-./build_aerojudge.sh
-```
-
 The launcher exports those values before running `judge_setup.sh`, so the setup
 script, update fetcher, and release installer use the same test endpoints.
 Changing only the raw branch URL changes scripts, not release assets. If the
