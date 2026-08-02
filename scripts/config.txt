@@ -54,6 +54,8 @@ dtparam=i2c_arm=on
 #dtparam=i2s=on
 #dtparam=spi=on
 
+# Real-time clock for PCB 3.61+ hardware
+dtoverlay=i2c-rtc,rv3028
 
 # Additional overlays and parameters are documented /boot/overlays/README
 
