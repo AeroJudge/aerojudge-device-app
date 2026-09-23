@@ -130,6 +130,10 @@ public class PilotService {
                         .parseBoolean(element.getElementsByTagName("airplane").item(0).getTextContent());
                 String comments = element.getElementsByTagName("comments").item(0).getTextContent();
                 Boolean active = Boolean.parseBoolean(element.getElementsByTagName("active").item(0).getTextContent());
+                // Missing or empty dropped elements evaluate to false.
+                Node droppedNode = element.getElementsByTagName("dropped").item(0);
+                boolean dropped = droppedNode != null
+                        && Boolean.parseBoolean(droppedNode.getTextContent());
                 Boolean freestyle = Boolean
                         .parseBoolean(element.getElementsByTagName("freestyle").item(0).getTextContent());
                 Boolean spread_spectrum = Boolean
@@ -141,16 +145,12 @@ public class PilotService {
                 String _class = class_element.getElementsByTagName("class").item(0).getTextContent();
                 Pilot pilot = new Pilot(freestyle, comments, addr2, addr1, _class, index, active, comp_id, frequency,
                         spread_spectrum, secondary_id, airplane, name, missing_pilot_panel, primary_id);
-                pilots.add(pilot);
+                // Active-pilot lists exclude pilots dropped in Score.
+                if (!activeOnly || (Boolean.TRUE.equals(active) && !dropped)) {
+                    pilots.add(pilot);
+                }
                 logger.debug(new Gson().toJson(pilot));
             }
-        }
-        
-        // Filter to active pilots if requested
-        if (activeOnly) {
-            pilots = pilots.stream()
-                    .filter(p -> Boolean.TRUE.equals(p.getActive()))
-                    .collect(java.util.stream.Collectors.toList());
         }
         
         return pilots;

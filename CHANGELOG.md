@@ -8,6 +8,7 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Exclude pilots marked `<dropped>true</dropped>` from active-pilot lists while preserving their saved scores and uploads.
 - Prepared AeroJudge Device App identity, package namespace, Maven coordinates,
   setup documentation, and release automation for the final AeroJudge
   repository.
