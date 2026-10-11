@@ -4,6 +4,9 @@ import java.util.List;
 
 public class InfoJson {
     private String appName;
+    // Board identity from the RV-3028 EEPROM; null when no valid record is present.
+    private String deviceSerialNumber;
+    private String boardRevision;
     private String appVersion;
 
     private List<InfoLine> info_lines;
@@ -32,6 +35,18 @@ public class InfoJson {
     }
     public void setAppName(String appName) {
         this.appName = appName;
+    }
+    public String getDeviceSerialNumber() {
+        return deviceSerialNumber;
+    }
+    public void setDeviceSerialNumber(String deviceSerialNumber) {
+        this.deviceSerialNumber = deviceSerialNumber;
+    }
+    public String getBoardRevision() {
+        return boardRevision;
+    }
+    public void setBoardRevision(String boardRevision) {
+        this.boardRevision = boardRevision;
     }
     public String getAppVersion() {
         return appVersion;

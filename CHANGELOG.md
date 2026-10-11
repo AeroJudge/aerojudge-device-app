@@ -8,6 +8,8 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Added `scripts/device_identity.sh` to read and write the board identity record (build mark, board revision, serial) in the RV-3028 user EEPROM, with standalone instructions in `scripts/README.md`.
+- Added `deviceSerialNumber` and `boardRevision` to `/api/getinfo`, read once at startup from the board EEPROM; null when no valid record is present.
 - Fixed where the score summary page showed a raw `-3` instead of `Deadline` for deadline penalties.
 - Use `apt-get` for fresh-device package installation to avoid interactive CLI warnings in setup logs.
 - Exclude pilots marked `<dropped>true</dropped>` from active-pilot lists while preserving their saved scores and uploads.

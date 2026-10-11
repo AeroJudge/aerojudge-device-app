@@ -18,10 +18,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.regex.Pattern;
+
+import jakarta.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,13 +36,52 @@ import org.slf4j.LoggerFactory;
 public class InfoCollectorService {
     private static final Logger logger = LoggerFactory.getLogger(InfoCollectorService.class);
 
+    // Board identity record in the RV-3028 user EEPROM: AJ1;<mark>;<revision>;<serial>, NUL terminated.
+    // Read once at startup. The app never writes it; scripts/device_identity.sh does.
+    private static final Path IDENTITY_EEPROM = Path.of("/sys/bus/nvmem/devices/rv3028_eeprom0/nvmem");
+    private static final Pattern BUILD_MARK = Pattern.compile("[A-HJ-M][0-9]{2}");
+    private static final Pattern BOARD_REVISION = Pattern.compile("[0-9]{1,2}\\.[0-9]{1,2}");
+    private static final Pattern SERIAL = Pattern.compile("[A-Z0-9-]{1,8}");
+
+    private String deviceSerialNumber;
+    private String boardRevision;
+
     @Autowired
     private SettingService settingService;
+
+    @PostConstruct
+    void readBoardIdentity() {
+        byte[] bytes;
+        try {
+            bytes = Files.readAllBytes(IDENTITY_EEPROM);
+        } catch (Exception e) {
+            return;
+        }
+        int end = 0;
+        while (end < bytes.length && bytes[end] != 0) {
+            end++;
+        }
+        if (end == bytes.length) {
+            return;
+        }
+        String[] fields = new String(bytes, 0, end, StandardCharsets.US_ASCII).split(";", -1);
+        if (fields.length != 4
+                || !fields[0].equals("AJ1")
+                || !BUILD_MARK.matcher(fields[1]).matches()
+                || !BOARD_REVISION.matcher(fields[2]).matches()
+                || !SERIAL.matcher(fields[3]).matches()) {
+            return;
+        }
+        boardRevision = fields[2];
+        deviceSerialNumber = fields[3];
+    }
 
     public InfoJson collectInfo() {
         InfoJson info = new InfoJson();
         info.setAppName("AeroJudge Device");
         info.setAppVersion(com.aerojudge.judge.JudgeApplication.getAppVersion());
+        info.setDeviceSerialNumber(deviceSerialNumber);
+        info.setBoardRevision(boardRevision);
 
         List<InfoLine> lines = new ArrayList<>();
         lines.add(getDeviceIP());

@@ -146,6 +146,51 @@ Then validate on assembled hardware:
 - audio is audible through the device amplifier
 - shutdown/poweroff behavior works
 
+## Board Identity
+
+The PCB stores its identity in the RV-3028 user EEPROM. It survives SD
+reimage, device reset, Pi replacement, and power loss. `device_identity.sh` is
+the only tool that writes it. It changes nothing else on the device and does
+not need a reboot or service restart.
+
+Obtain and run over SSH as `judge`:
+
+```sh
+cd /home/judge
+curl -fsSL https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main/scripts/device_identity.sh -o device_identity.sh
+chmod +x device_identity.sh
+./device_identity.sh read
+sudo ./device_identity.sh write
+```
+
+`write` shows the current EEPROM contents, asks for build mark, board revision,
+and serial, shows the record, asks for confirmation, writes, and reads back.
+Success prints `Identity written and verified: AJ1;<mark>;<rev>;<serial>`.
+If a valid identity is already present, `write` shows it and exits unchanged.
+
+Inputs:
+
+- Build mark: month letter plus two-digit year, for example `K26` for October
+  2026. Letters A-M skip I. The prompt lists them.
+- Board revision: the digits after `Board Rev:` on the PCB, for example `3.61`.
+- Serial: the device serial, for example `DPG-110`. Enter `NO-SN` for a board
+  not fitted to a device.
+
+Recovery from a wrong or interrupted write: run `read` to see what is stored,
+then correct it deliberately with:
+
+```sh
+sudo ./device_identity.sh write --override
+```
+
+Override is not part of the normal build workflow.
+
+REMOVE the script after use as it does not need to stay on the device:
+
+```sh
+rm device_identity.sh
+```
+
 ## Known Follow-Ups
 
 - `attempt_auto_sync_scores` is currently re-added to `settings.json` by the
