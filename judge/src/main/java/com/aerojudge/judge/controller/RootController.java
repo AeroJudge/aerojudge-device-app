@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.xml.sax.SAXException;
@@ -50,6 +52,25 @@ public class RootController {
     private SettingService settingService;
     @Autowired
     private SequenceFolderResolver sequenceFolderResolver;
+    @Autowired
+    private DeviceClockService deviceClockService;
+
+    @GetMapping("/device-time-warning")
+    public String deviceTimeWarning() {
+        return deviceClockService.isTimeLossWarningPending() ? "device-time-warning" : "redirect:/";
+    }
+
+    @PostMapping("/device-time-warning/dismiss")
+    public String dismissDeviceTimeWarning() {
+        deviceClockService.dismissTimeLossWarning();
+        return "redirect:/";
+    }
+
+    @PostMapping(value = "/device-time-warning/resync", produces = "application/json")
+    @ResponseBody
+    public Map<String, Object> resyncDeviceClock() {
+        return deviceClockService.resyncClockFromScore();
+    }
 
     @GetMapping("/")
     public String home(Model model)

@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -56,19 +58,37 @@ public class PilotService {
 
     private static final String PILOT_SCORE_DIR = SettingUtils.getApplicationConfigPath() + "/pilots/scores/";
     private static final String PILOT_DAT_PATH = SettingUtils.getApplicationConfigPath() + "/pilots.dat";
-    private String PILOT_DAT_URL = "http://SCORE_HOST:SCORE_HTTP_PORT/scorepad/pilots.dat";
     private String SCORE_UPLOAD_URL = "http://SCORE_HOST:SCORE_HTTP_PORT/scorepadupload/";
     @Autowired
     private CompService compService;
     @Autowired
     private SettingService settingService;
+    @Autowired
+    private DeviceClockService deviceClockService;
 
     public void getPilotsFileFromScore() throws MalformedURLException, IOException {
+        getPilotsFileFromScore(false);
+    }
+
+    public void getPilotsFileFromScore(boolean syncClock) throws MalformedURLException, IOException {
         SettingDTO settingDTO = settingService.getSettings();
         int timeout = (int)Duration.ofSeconds(settingDTO.getScore_timeout()).toMillis();
-        PILOT_DAT_URL = PILOT_DAT_URL.replace("SCORE_HOST", settingDTO.getScore_host()).replace("SCORE_HTTP_PORT", String.valueOf(settingDTO.getScore_http_port()));
-        // Updated deprecated URL, changed new URL(x) to URI.create(x).toURL() 2025-11 DPG
-        FileUtils.copyURLToFile(URI.create(PILOT_DAT_URL).toURL(), new File(PILOT_DAT_PATH),timeout,timeout);
+        String url = "http://" + settingDTO.getScore_host() + ":" + settingDTO.getScore_http_port()
+                + "/scorepad/pilots.dat";
+        HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
+        try {
+            connection.setConnectTimeout(timeout);
+            connection.setReadTimeout(timeout);
+            connection.setUseCaches(false);
+            try (InputStream input = connection.getInputStream()) {
+                if (syncClock && connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
+                    deviceClockService.observeScoreTime(connection.getHeaderField("Date"));
+                }
+                FileUtils.copyInputStreamToFile(input, new File(PILOT_DAT_PATH));
+            }
+        } finally {
+            connection.disconnect();
+        }
     }
 
     public boolean isPilots(){

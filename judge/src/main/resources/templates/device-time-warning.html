@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Device time lost</title>
+    <link href="/materialize/css/materialize.min.css" rel="stylesheet">
+    <style>
+        #deviceTimeWarning {
+            width: 95%; max-width: 760px; max-height: 94%; top: 3% !important;
+            border-radius: 20px; border: 8px solid #b71c1c;
+        }
+        #deviceTimeWarning .modal-content { padding: 28px; }
+        #deviceTimeWarning h3 {
+            font-size: 3.2rem; font-weight: 700; line-height: 1.15; margin: 0 0 20px;
+        }
+        #deviceTimeWarning p {
+            font-size: 1.9rem; font-weight: 600; line-height: 1.25; margin: 0;
+            overflow-wrap: anywhere;
+        }
+        #deviceTimeWarning .modal-footer {
+            height: auto; padding: 16px 20px 22px;
+            display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+        }
+        #deviceTimeWarning .btn-large {
+            height: 58px; line-height: 58px; font-size: 1.2rem; font-weight: 700;
+        }
+        #deviceTimeWarning .dismiss { border: 1px solid #9e9e9e; box-shadow: none; }
+    </style>
+</head>
+<body>
+<div id="deviceTimeWarning" class="modal" role="dialog" aria-modal="true" aria-labelledby="warningTitle">
+    <div class="modal-content white black-text center-align">
+        <h3 id="warningTitle" class="red-text text-darken-4">Device time lost - resync to Score</h3>
+        <p id="clockMessage" role="status" aria-live="polite"></p>
+    </div>
+    <div class="modal-footer white">
+        <form action="/device-time-warning/dismiss" method="post">
+            <button type="submit" class="btn-large grey lighten-4 black-text dismiss">Dismiss</button>
+        </form>
+        <button id="resyncClock" type="button" class="btn-large red accent-4 white-text">Resync Clock</button>
+    </div>
+</div>
+<script src="/materialize/js/materialize.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        M.Modal.init(document.getElementById('deviceTimeWarning'), {dismissible: false}).open();
+        const button = document.getElementById('resyncClock');
+        const message = document.getElementById('clockMessage');
+        button.addEventListener('click', async function () {
+            if (button.disabled) return;
+            button.disabled = true;
+            message.textContent = 'Synchronizing...';
+            try {
+                const response = await fetch('/device-time-warning/resync', {method: 'POST'});
+                const result = await response.json();
+                if (response.ok && result.success === true) {
+                    message.textContent = 'Clock synchronized with Score';
+                    setTimeout(function () { window.location.assign('/'); }, 2000);
+                    return;
+                }
+                message.textContent = result.message || 'Unable to resync clock. Please retry or dismiss.';
+            } catch (error) {
+                message.textContent = 'Unable to resync clock. Please retry or dismiss.';
+            }
+            button.disabled = false;
+        });
+    });
+</script>
+</body>
+</html>

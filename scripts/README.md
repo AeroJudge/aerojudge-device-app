@@ -69,6 +69,8 @@ The setup script:
 - hides the desktop Wastebasket
 - disables PackageKit desktop update prompts
 - fetches and installs release assets
+- provisions the RTC clock policy after downloads, using the shared RTC setup
+  tool described below, then activates the clock helper
 - validates services, release assets, audio assets, runtime directories, and
   the PCB 3.61+ boot configuration
 - asks whether to reboot
@@ -190,6 +192,172 @@ REMOVE the script after use as it does not need to stay on the device:
 ```sh
 rm device_identity.sh
 ```
+
+## RTC And Shared Event Time (PCB 3.60 And Later)
+
+The RV-3028 retains UTC event time while the device is off. Provisioned devices
+use Score's current `pilots.dat` HTTP Date header on event load and explicit
+refresh to set both system time and RTC. Ordinary navigation, round actions,
+uploads, status checks, and reconnection do not synchronize the clock. Judging
+and an already-loaded event remain usable offline.
+
+At app startup, a confirmed RTC invalid-time flag opens **Device time lost -
+resync to Score**. **Resync Clock** uses only the header from a new pilot GET;
+it does not replace pilot/sequence files or rebuild caches. **Dismiss** continues
+without contacting Score and suppresses the warning for that application run.
+Read errors are logged and do not become time-loss warnings.
+
+### Existing-Device Provisioning
+
+Use a parked device. Install the compatible application before provisioning;
+the script checks for its clock service, interceptor, and warning template.
+For a published compatible release, obtain the standalone tool over SSH:
+
+```sh
+cd /home/judge
+curl -fsSL https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main/scripts/rtc_setup.sh -o rtc_setup.sh
+sudo bash ./rtc_setup.sh
+```
+
+For an unreleased bench build, transfer the matching `judge.jar`,
+`rtc_setup.sh`, `device_clock.py`, and `fetch_update.sh` from the same source
+revision. Back up and install that JAR with the app stopped, then restart it.
+Place the three scripts together in a staging directory and run:
+
+```sh
+sudo bash /home/judge/rtc-bench/rtc_setup.sh --staged /home/judge/rtc-bench
+```
+
+The ordinary standalone invocation downloads the helper and revised update
+launcher **before** disabling internet time. `--staged` uses local files and
+does not fetch them. Fresh setup stages the same files with its runtime files
+and invokes the same provisioning after release installation, before enabling
+services. Its existing PCB 3.61+ restriction and reboot prompt are unchanged.
+
+Provisioning:
+
+1. Checks the installed app, stages recovery support, and validates the current
+   boot config. A missing, duplicate, conflicting, or unexpected RTC overlay
+   alerts and stops for the owner to investigate/fix and rerun.
+2. Creates a root-only backup directory under `/var/backups/aerojudge-clock/`
+   and reports its exact path. It records boot config, timezone, update launcher,
+   prior helper/sudo rule, fake-hwclock package/data, and service states.
+3. Stops the app and installs the revised launcher and a `visudo`-validated
+   rule for the root-owned helper. It replaces only the known basic RTC overlay
+   with the following, or retains this exact line on a rerun:
+
+   ```ini
+   dtoverlay=i2c-rtc,rv3028,trickle-resistor-ohms=3000,backup-switchover-mode=1
+   ```
+
+4. Sets the OS timezone to UTC, removes fake-hwclock, and disables/stops
+   systemd-timesyncd. Timesyncd remains installed and unmasked for explicit
+   recovery. No custom RTC boot service is added.
+5. Installs `/usr/local/sbin/aerojudge-clock` as root:root, mode 0755, **last**.
+   The app activates clock support only with this executable and the RV-3028
+   driver at rtc0. The app is restarted if it was running before provisioning.
+
+The tool keeps `dtparam=i2c_arm=on`, board-specific GPIO lines, and EEPROM
+identity untouched. Never copy the 3.61 boot config over a 3.60 device. Reruns
+create a new backup and apply the same targeted settings. Preserve the first
+pre-provisioning backup for full rollback.
+
+Reboot after provisioning to apply the overlay, then verify:
+
+```sh
+sudo reboot
+# Reconnect over SSH after reboot:
+cat /sys/class/rtc/rtc0/name
+cat /sys/class/rtc/rtc0/hctosys
+timedatectl show --property=Timezone
+systemctl show systemd-timesyncd.service --property=ActiveState --property=MainPID
+systemctl is-enabled systemd-timesyncd.service
+sudo -u judge sudo -n /usr/local/sbin/aerojudge-clock status
+date --utc --iso-8601=seconds
+sudo hwclock --rtc=/dev/rtc0 --show --utc
+curl -fsS http://localhost:8080/actuator/health
+```
+
+Expected: driver `rtc-rv3028`, hctosys `1`, timezone UTC, timesyncd stopped with
+MainPID `0` and disabled (`is-enabled` returns nonzero for disabled), helper
+status containing `success: true` and `state: valid` or `invalid`. An invalid
+state requires Score resync or dismissal of the startup warning. Load/refresh
+from Score before event use, verify both clock readbacks, and inspect UTC app
+log/display times. Keep backups until overnight retention, startup warning,
+offline restart, update recovery, and two-device agreement have passed bench
+acceptance. Workstation tests cannot establish those hardware results.
+
+### Explicit Updates And Time Recovery
+
+The app update check and installed `fetch_update.sh` use the helper before
+HTTPS. Recovery stops timesyncd, requires the old synchronization marker to be
+absent, then starts it and waits up to 30 seconds for a fresh marker. It stops
+the service before returning. A fresh synchronization writes/verifies RTC;
+without one, RTC is not overwritten from unvalidated system time.
+
+For manual recovery on a provisioned, parked device:
+
+```sh
+sudo /usr/local/sbin/aerojudge-clock sync-internet
+clock_result=$?
+printf 'Clock helper exit: %s\n' "$clock_result"
+```
+
+- Exit `0`: clocks verified and timesyncd stopped.
+- Exit `2`: recovery incomplete, but timesyncd confirmed stopped; ordinary
+  certificate-validated HTTPS may proceed using the available system time.
+- Exit `1`, missing JSON, or malformed JSON: do not proceed on an assumption
+  that cleanup succeeded. Resolve the reported failure first. A busy operation
+  also returns `1`; retry after the current operation finishes.
+
+The helper's exit `2` is internal and **does not mean an update was installed**.
+The launcher retains its existing exit meanings. Neither NTP failure nor a
+network change bypasses HTTPS certificate validation. An actual HTTPS failure
+uses the existing update error flow. After internet recovery, load/refresh from
+Score before subsequent event use to restore the shared event time base.
+
+If time recovery is needed before `device_reset.sh`, run the helper and inspect
+its JSON/exit result **before any destructive reset steps or HTTPS fetches**.
+Apply the same `0`/`2` stopped-service policy above; stop on `1` or an invalid
+result. The reset script itself is unchanged and does not perform this initial
+recovery for its own first HTTPS fetch.
+
+### Provisioning Failure And Full Rollback
+
+On provisioning failure after changes begin, the script reports the failed
+step, retains its staged recovery files/backups, and attempts to restore the
+previous clock policy before restarting the previously running app. This can
+require reinstalling fake-hwclock. If restoration fails, the app remains
+stopped and the retained backup path is reported for manual recovery. Do not
+discard these files or rerun blindly over an unresolved restoration failure.
+
+A JAR rollback alone does not undo RTC provisioning. For a full rollback on a
+parked device, use the original pre-provisioning backup, stop the app, and:
+
+1. Restore `config.txt` to `/boot/config.txt`, `localtime` to `/etc/localtime`,
+   `timezone` to `/etc/timezone`, and `fetch_update.sh` to
+   `/home/judge/fetch_update.sh`. Preserve file ownership/modes and the
+   `/etc/localtime` symlink (`cp -a --remove-destination`). A `.absent` marker
+   means that file did not exist before the run; restore that absence.
+2. Set the timezone recorded in `timezone-name` using
+   `sudo timedatectl set-timezone <recorded-timezone>`. Restore timesyncd's
+   recorded `.enabled` and `.active` states. Use `systemctl enable`, `disable`,
+   or `mask` as recorded (`--runtime` for runtime states), and `start` or `stop`
+   for its prior active/inactive state. Unmask before starting if necessary;
+   if a previously running service was also masked, reapply its mask afterward.
+3. If `fake-hwclock.installed` says `yes`, reinstall it with
+   `sudo apt-get install -y fake-hwclock`, restore its saved data to
+   `/etc/fake-hwclock.data`, run `sudo systemctl daemon-reload`, and restore its
+   saved service enablement/activity. Restore time support before this package
+   operation so normal HTTPS remains usable.
+4. Remove `/usr/local/sbin/aerojudge-clock` and
+   `/etc/sudoers.d/aerojudge-clock` for a full return to the original
+   unprovisioned state; validate sudo configuration with `sudo visudo -cf
+   /etc/sudoers`. When undoing only a rerun, restore the saved prior helper and
+   sudo rule instead of removing them.
+5. Restore the separately backed-up application JAR if required, restore the
+   original app service state, and reboot. Verify kernel RTC restoration,
+   timezone, services, and the app before returning the device to use.
 
 ## Known Follow-Ups
 

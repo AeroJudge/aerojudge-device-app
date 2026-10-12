@@ -8,6 +8,12 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Added RV-3028 RTC provisioning and shared UTC event time from Score during
+  event load and explicit refresh, with a dismissible startup time-loss warning
+  and a clock-only resync action. Judging remains available without Score.
+- Added bounded internet-time recovery before explicit update checks/downloads,
+  with confirmed timesyncd shutdown before HTTPS continues, and documented RTC
+  provisioning rollback and reset recovery.
 - Added `scripts/device_identity.sh` to read and write the board identity record (build mark, board revision, serial) in the RV-3028 user EEPROM, with standalone instructions in `scripts/README.md`.
 - Added `deviceSerialNumber` and `boardRevision` to `/api/getinfo`, read once at startup from the board EEPROM; null when no valid record is present.
 - Fixed where the score summary page showed a raw `-3` instead of `Deadline` for deadline penalties.

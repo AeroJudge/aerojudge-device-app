@@ -96,7 +96,7 @@ public class ValidationController {
         logger.info("User requested re-sync from validation error screen");
         try {
             // Perform the sync directly
-            pilotService.getPilotsFileFromScore();
+            pilotService.getPilotsFileFromScore(true);
             sequenceService.getSequenceFileFromScore();
 
             // IMPORTANT: Force reload the schedules cache with new data!

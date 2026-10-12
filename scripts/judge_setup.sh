@@ -236,6 +236,8 @@ install_runtime_files() {
     download "$RAW_BASE_URL/scripts/kiosk.service" "$tmp_dir/kiosk.service"
     download "$RAW_BASE_URL/scripts/kiosk.sh" "$tmp_dir/kiosk.sh"
     download "$RAW_BASE_URL/scripts/fetch_update.sh" "$tmp_dir/fetch_update.sh"
+    download "$RAW_BASE_URL/scripts/device_clock.py" "$tmp_dir/device_clock.py"
+    download "$RAW_BASE_URL/scripts/rtc_setup.sh" "$tmp_dir/rtc_setup.sh"
     download "$RAW_BASE_URL/scripts/ajdesktop.png" "$tmp_dir/ajdesktop.png"
     download "$RAW_BASE_URL/scripts/settings_readme.md" "$tmp_dir/settings_readme.md"
 
@@ -411,6 +413,9 @@ install_boot_config
 create_settings
 install_runtime_files
 install_release_assets
+# Keep the base image time service through all HTTPS downloads. Provisioning
+# activates the helper last and shares the standalone existing-device path.
+sudo bash /tmp/aerojudge-setup-files/rtc_setup.sh --staged /tmp/aerojudge-setup-files
 enable_services
 validate_install
 finish

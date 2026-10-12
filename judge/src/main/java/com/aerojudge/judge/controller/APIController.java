@@ -48,6 +48,7 @@ import com.google.gson.JsonParser;
 import com.aerojudge.judge.utils.SettingUtils;
 
 import com.aerojudge.judge.service.CompService;
+import com.aerojudge.judge.service.DeviceClockService;
 import com.aerojudge.judge.service.InfoCollectorService;
 import com.aerojudge.judge.service.PilotService;
 import com.aerojudge.judge.service.ScheduleService;
@@ -77,6 +78,8 @@ public class APIController {
     private ScheduleService scheduleService;
     @Autowired
     private ScoreResolverService scoreResolverService;
+    @Autowired
+    private DeviceClockService deviceClockService;
 
     @GetMapping("/api/comp")
     public CompDTO getComp() throws IOException, ParserConfigurationException, SAXException {
@@ -170,7 +173,7 @@ public class APIController {
         logger.debug(new Gson().toJson(comp));
        
         // fetch pilots
-        pilotService.getPilotsFileFromScore(); // Reloading here means we can add pilots mid comp. But if their id/name
+        pilotService.getPilotsFileFromScore(true); // Reloading here means we can add pilots mid comp. But if their id/name
         compService.enrichCompWithCompInfoFromScore(comp); // Add the names and ID.
        
        
@@ -327,7 +330,7 @@ public class APIController {
     @GetMapping("/api/pilots/sync")
     public String syncPilots() throws IOException, ParserConfigurationException, SAXException {
         // fetch pilots
-        pilotService.getPilotsFileFromScore();
+        pilotService.getPilotsFileFromScore(true);
         sequenceService.getSequenceFileFromScore();
         // Force reload ScheduleService cache with new sequence data
         scheduleService.populateSequences();
@@ -956,6 +959,16 @@ public class APIController {
             result.put("latestTag", null);
             result.put("message", "Current app version is unavailable or invalid; update checks require a packaged release version in YY.MAJOR.MINOR format.");
             logger.warn("Version check skipped: current app version is not comparable: {}", currentVersion);
+            return new ResponseEntity<>(new GsonBuilder().serializeNulls().create().toJson(result), HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        Map<String, Object> clockPreparation = deviceClockService.prepareForUpdate();
+        if (!Boolean.TRUE.equals(clockPreparation.get("success"))) {
+            result.put("result", "fail");
+            result.put("updateAvailable", false);
+            result.put("latestVersion", null);
+            result.put("latestTag", null);
+            result.put("message", clockPreparation.get("message"));
             return new ResponseEntity<>(new GsonBuilder().serializeNulls().create().toJson(result), HttpStatus.SERVICE_UNAVAILABLE);
         }
 

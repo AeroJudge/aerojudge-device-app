@@ -20,6 +20,30 @@
 RAW_BASE_URL="${AEROJUDGE_RAW_BASE_URL:-https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main}"
 UPDATE_URL="$RAW_BASE_URL/scripts/judge_update.sh"
 
+# Recovery is installed before provisioning disables normal internet time.
+# Its exit 2 is internal: it permits HTTPS, not an installed-update result.
+CLOCK_HELPER=/usr/local/sbin/aerojudge-clock
+if [ -x "$CLOCK_HELPER" ] && [ -r /sys/class/rtc/rtc0/name ] &&
+    grep -Eq '^rtc-rv3028([[:space:]]|$)' /sys/class/rtc/rtc0/name; then
+    CLOCK_RESULT=$(sudo -n "$CLOCK_HELPER" sync-internet)
+    CLOCK_EXIT=$?
+    if ! printf '%s' "$CLOCK_RESULT" | python3 -c '
+import json, sys
+try:
+    result = json.load(sys.stdin)
+    code = int(sys.argv[1])
+    assert type(result.get("success")) is bool
+    assert isinstance(result.get("message"), str) and result["message"].strip()
+    print(result["message"], file=sys.stderr)
+    assert (code == 0 and result["success"]) or (code == 2 and not result["success"])
+except Exception:
+    print("Clock recovery did not confirm safe completion; update stopped.", file=sys.stderr)
+    sys.exit(1)
+' "$CLOCK_EXIT"; then
+        exit 1
+    fi
+fi
+
 # Download the update script to a temp file so we can pass arguments to it.
 # The previous `curl | bash` pattern could not forward arguments.
 SCRIPT_FILE=$(mktemp /tmp/judge_update_XXXXXX.sh)
