@@ -8,6 +8,9 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Corrected RV-3028 provisioning to use level switching (mode 3) for the board's
+  close main/backup voltages. Documented that driver configuration writes persist
+  in RTC EEPROM and are not undone by software or basic boot-config rollback.
 - Added RV-3028 RTC provisioning and shared UTC event time from Score during
   event load and explicit refresh, with a dismissible startup time-loss warning
   and a clock-only resync action. Judging remains available without Score.

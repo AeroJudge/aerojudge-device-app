@@ -72,6 +72,8 @@ restore_service() {
 
 restore_clock_policy() {
     local failed=0
+    # Software restoration only: these backups do not capture RTC configuration
+    # EEPROM. Restoring a basic overlay does not undo prior driver EEPROM writes.
     # Restore time support first, so package recovery can use normal HTTPS.
     timedatectl set-timezone "$(cat "$BACKUP/timezone-name")" || failed=1
     restore_file /etc/localtime localtime || failed=1
@@ -96,7 +98,8 @@ on_exit() {
     local exit_code=$?
     trap - EXIT ERR INT TERM
     if [ "$exit_code" -ne 0 ] && "$BACKUP_READY" && "$CHANGED"; then
-        echo "Restoring previous clock policy after failure at $STEP." >&2
+        echo "Restoring previous software clock policy after failure at $STEP." >&2
+        echo "RTC EEPROM configuration is persistent and is not restored by this rollback." >&2
         if restore_clock_policy; then
             if [ "$(cat "$BACKUP/judge.service.active")" = active ]; then
                 systemctl start judge.service || echo "App restart failed; inspect judge.service." >&2
@@ -164,11 +167,14 @@ grep -q 'sync-internet' "$STAGE/fetch_update.sh" || fail "Staged launcher lacks 
 STEP="validating boot configuration"
 # Only replace the known basic overlay, or retain the exact provisioned overlay.
 # Missing/conflicting/unexpected configurations belong to the owner to repair.
+# Mode 3 uses level switching; DSM is unsuitable for the board's close supply
+# voltages. On boot the driver persists these settings in configuration EEPROM.
+# Removing parameters later does not reset that EEPROM; user identity is separate.
 python3 - /boot/config.txt "$STAGE/config.txt" <<'PY'
 import pathlib, sys
 source = pathlib.Path(sys.argv[1]).read_bytes()
 basic = 'dtoverlay=i2c-rtc,rv3028'
-target = basic + ',trickle-resistor-ohms=3000,backup-switchover-mode=1'
+target = basic + ',trickle-resistor-ohms=3000,backup-switchover-mode=3'
 section = ''
 rtc_lines = []
 i2c_on = False
@@ -262,7 +268,8 @@ fi
 
 STEP="activating the helper"
 # This executable is the activation marker. Install it only after policy and
-# recovery support are in place. No device identity or RTC EEPROM writes occur.
+# recovery support are in place. Installing the helper does not write identity
+# or configuration EEPROM; the boot overlay causes persistent driver writes.
 install -o root -g root -m 0755 "$STAGE/device_clock.py" "$HELPER"
 [ "$(stat -c '%U:%G:%a' "$HELPER")" = root:root:755 ] || fail "Helper permissions did not verify."
 [ "$(stat -c '%U:%G:%a' "$SUDO_RULE")" = root:root:440 ] || fail "Sudo rule permissions did not verify."
@@ -272,5 +279,6 @@ if [ "$(cat "$BACKUP/judge.service.active")" = active ]; then
     systemctl start judge.service
 fi
 CHANGED=false
-echo "RTC provisioning completed. Reboot to apply the overlay and verify RTC boot restoration."
+echo "RTC software provisioning completed. Reboot to apply the mode-3 overlay and verify RTC boot restoration."
+echo "The driver persists RTC configuration in EEPROM. Restoring boot config does not undo it."
 echo "Keep $BACKUP and $STAGE until bench acceptance. Load/refresh from Score before event use."

@@ -55,7 +55,9 @@ dtparam=i2c_arm=on
 #dtparam=spi=on
 
 # Real-time clock for PCB 3.61+ hardware
-dtoverlay=i2c-rtc,rv3028,trickle-resistor-ohms=3000,backup-switchover-mode=1
+# Use level switching (3): main and charged backup voltages are too close for DSM.
+# Driver writes persist in RTC EEPROM; removing these parameters does not undo them.
+dtoverlay=i2c-rtc,rv3028,trickle-resistor-ohms=3000,backup-switchover-mode=3
 
 # Additional overlays and parameters are documented /boot/overlays/README
 

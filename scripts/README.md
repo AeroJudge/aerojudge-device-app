@@ -247,7 +247,7 @@ Provisioning:
    with the following, or retains this exact line on a rerun:
 
    ```ini
-   dtoverlay=i2c-rtc,rv3028,trickle-resistor-ohms=3000,backup-switchover-mode=1
+   dtoverlay=i2c-rtc,rv3028,trickle-resistor-ohms=3000,backup-switchover-mode=3
    ```
 
 4. Sets the OS timezone to UTC, removes fake-hwclock, and disables/stops
@@ -260,7 +260,21 @@ Provisioning:
 The tool keeps `dtparam=i2c_arm=on`, board-specific GPIO lines, and EEPROM
 identity untouched. Never copy the 3.61 boot config over a 3.60 device. Reruns
 create a new backup and apply the same targeted settings. Preserve the first
-pre-provisioning backup for full rollback.
+pre-provisioning backup for software rollback. The former mode-1 line is no
+longer accepted; it stops for investigation and manual correction, just like
+other unexpected configurations. Do not reuse the original mode-1 bench ZIP.
+
+Mode 3 selects level switching (LSM). The manufacturer discourages direct
+switching (DSM, mode 1) with close supplies such as 3.3 V main and at least
+3.0 V backup. This board measured 3.28 V main and 3.18-3.19 V backup at idle.
+See the [RV-3028 application manual, sections 4.2.2 and 4.2.3](https://www.microcrystal.com/fileadmin/Media/Products/RTC/App.Manual/RV-3028-C7_App-Manual.pdf).
+
+**RTC configuration persists in EEPROM.** On boot, the kernel driver applies
+the overlay properties and saves changed configuration to the chip. Removing
+those properties or restoring the basic overlay does not reset the saved
+settings. Replacing the SD card or removing all power does not erase them
+either. Configuration EEPROM is separate from the user EEPROM holding device
+identity; provisioning must preserve identity and factory calibration.
 
 Reboot after provisioning to apply the overlay, then verify:
 
@@ -322,7 +336,7 @@ Apply the same `0`/`2` stopped-service policy above; stop on `1` or an invalid
 result. The reset script itself is unchanged and does not perform this initial
 recovery for its own first HTTPS fetch.
 
-### Provisioning Failure And Full Rollback
+### Provisioning Failure And Software Rollback
 
 On provisioning failure after changes begin, the script reports the failed
 step, retains its staged recovery files/backups, and attempts to restore the
@@ -331,7 +345,7 @@ require reinstalling fake-hwclock. If restoration fails, the app remains
 stopped and the retained backup path is reported for manual recovery. Do not
 discard these files or rerun blindly over an unresolved restoration failure.
 
-A JAR rollback alone does not undo RTC provisioning. For a full rollback on a
+A JAR rollback alone does not undo RTC provisioning. For a software rollback on a
 parked device, use the original pre-provisioning backup, stop the app, and:
 
 1. Restore `config.txt` to `/boot/config.txt`, `localtime` to `/etc/localtime`,
@@ -351,13 +365,22 @@ parked device, use the original pre-provisioning backup, stop the app, and:
    saved service enablement/activity. Restore time support before this package
    operation so normal HTTPS remains usable.
 4. Remove `/usr/local/sbin/aerojudge-clock` and
-   `/etc/sudoers.d/aerojudge-clock` for a full return to the original
-   unprovisioned state; validate sudo configuration with `sudo visudo -cf
+   `/etc/sudoers.d/aerojudge-clock` to restore the original
+   unprovisioned software state; validate sudo configuration with `sudo visudo -cf
    /etc/sudoers`. When undoing only a rerun, restore the saved prior helper and
    sudo rule instead of removing them.
 5. Restore the separately backed-up application JAR if required, restore the
    original app service state, and reboot. Verify kernel RTC restoration,
    timezone, services, and the app before returning the device to use.
+
+These backups do not capture or restore RTC configuration EEPROM. A software
+rollback therefore is not a complete hardware rollback. Restoring an older
+overlay that explicitly specifies a mode can write that mode again on boot;
+restoring the basic overlay leaves the saved chip settings in place. Any
+hardware configuration reversal needs a separately reviewed procedure that
+preserves calibration, FEDE, and identity. If RTC or identity access disappears,
+stop and retain logs/backups for investigation; do not rerun provisioning or
+assume a config/JAR rollback repaired the chip state.
 
 ## Known Follow-Ups
 
