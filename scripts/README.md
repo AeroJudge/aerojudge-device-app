@@ -58,6 +58,8 @@ The setup script:
 
 - verifies Bullseye, 32-bit, and user `judge`
 - refuses to run if existing AeroJudge install state is found
+- asks for the board identity and the season year up front, writes identity
+  to the PCB EEPROM, then runs without input until the reboot prompt
 - expands the root filesystem to use the available SD card space
 - installs required packages
 - installs the AeroJudge boot configuration
@@ -153,7 +155,8 @@ Then validate on assembled hardware:
 The PCB stores its identity in the RV-3028 user EEPROM. It survives SD
 reimage, device reset, Pi replacement, and power loss. `device_identity.sh` is
 the only tool that writes it. It changes nothing else on the device and does
-not need a reboot or service restart.
+not need a reboot or service restart. Fresh setup runs this same tool before
+installing anything; a board with a valid record is shown and not asked for.
 
 Obtain and run over SSH as `judge`:
 

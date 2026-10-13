@@ -14,6 +14,10 @@ BIN_DIR="$INSTALL_DIR/bin"
 SETTINGS_FILE="$INSTALL_DIR/settings.json"
 BOOT_CONFIG="/boot/config.txt"
 BOOT_CONFIG_BACKUP="/boot/config.txt.before-aerojudge"
+IDENTITY_TOOL="/tmp/device_identity.sh"
+NVMEM="/sys/bus/nvmem/devices/rv3028_eeprom0/nvmem"
+DEVICE_IDENTITY=""
+SEASON_YEAR=""
 
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -62,13 +66,16 @@ confirm_target() {
     echo -e "${RED}This script is for clean fresh installs only.${NC}"
     echo "Do not run it on legacy devices or existing deployed devices."
     echo
+    echo "Setup first asks for the board identity and the season year,"
+    echo "then installs without further input until it offers to reboot."
+    echo
     echo "Type CONFIRM to continue:"
     read -r response
     [ "$response" = "CONFIRM" ] || fail "Setup cancelled."
 }
 
 verify_target() {
-    step "1/11" "Verifying target OS, user, and fresh install state"
+    step "1/12" "Verifying target OS, user, and fresh install state"
 
     [ -f /etc/os-release ] || fail "/etc/os-release not found."
     # shellcheck disable=SC1091
@@ -88,8 +95,59 @@ verify_target() {
     echo "User: $(id -un)"
 }
 
+collect_inputs() {
+    step "2/12" "Collecting build inputs"
+
+    local confirm_year
+
+    curl -fsSL "$RAW_BASE_URL/scripts/device_identity.sh" -o "$IDENTITY_TOOL" \
+        || fail "Could not download device_identity.sh"
+
+    # The base image boots without I2C or the RTC overlay. Load them for this
+    # session only; the installed boot config brings them up after reboot.
+    if [ ! -e "$NVMEM" ]; then
+        sudo dtparam i2c_arm=on || fail "Could not enable I2C for the board EEPROM."
+        sudo dtoverlay i2c-rtc rv3028 || fail "Could not load the RTC overlay for the board EEPROM."
+    fi
+
+    # Identity is written to the PCB EEPROM now, before any SD card change.
+    # A board with a valid record is shown and not asked for.
+    sudo bash "$IDENTITY_TOOL" write || fail "Board identity was not provisioned."
+    DEVICE_IDENTITY=$(bash "$IDENTITY_TOOL" read) || fail "Board identity could not be read."
+
+    echo
+    while true; do
+        echo -e "${BLUE}Enter two digit season year, for 2026 enter 26:${NC}"
+        read -r SEASON_YEAR
+
+        if [[ ! "$SEASON_YEAR" =~ ^[2-3][0-9]$ ]]; then
+            echo "Season year must be two digits."
+            continue
+        fi
+
+        while true; do
+            read -r -p "Season year entered: $SEASON_YEAR. Is this correct? [y/n] " confirm_year
+            case "$confirm_year" in
+                [Yy]|[Yy][Ee][Ss])
+                    break 2
+                    ;;
+                [Nn]|[Nn][Oo])
+                    echo "Re-enter season year."
+                    break
+                    ;;
+                *)
+                    echo "Please answer y or n."
+                    ;;
+            esac
+        done
+    done
+
+    echo
+    echo -e "${GREEN}Inputs collected. Building now; no further input is needed until the reboot prompt.${NC}"
+}
+
 expand_root_filesystem() {
-    step "2/11" "Expanding root filesystem"
+    step "3/12" "Expanding root filesystem"
 
     if command -v raspi-config >/dev/null 2>&1; then
         sudo raspi-config --expand-rootfs || fail "Root filesystem expansion failed."
@@ -100,7 +158,7 @@ expand_root_filesystem() {
 }
 
 install_packages() {
-    step "3/11" "Installing required packages"
+    step "4/12" "Installing required packages"
 
     sudo apt-get update
     sudo apt-get install -y \
@@ -125,7 +183,7 @@ install_packages() {
 }
 
 verify_network_access() {
-    step "4/11" "Verifying repository and release access"
+    step "5/12" "Verifying repository and release access"
 
     local config_url="$RAW_BASE_URL/scripts/config.txt"
 
@@ -137,7 +195,7 @@ verify_network_access() {
 }
 
 install_boot_config() {
-    step "5/11" "Installing AeroJudge boot config"
+    step "6/12" "Installing AeroJudge boot config"
 
     local tmp_config="/tmp/aerojudge-config.txt"
 
@@ -152,7 +210,7 @@ install_boot_config() {
 }
 
 create_settings() {
-    step "6/11" "Creating device settings"
+    step "7/12" "Creating device settings"
 
     local judge_id="1"
     local line_number="1"
@@ -161,34 +219,6 @@ create_settings() {
     local language="en"
     local score_poll_timeout="2"
     local score_timeout="10"
-    local season_year
-    local confirm_year
-
-    while true; do
-        echo -e "${BLUE}Enter two digit season year, for 2026 enter 26:${NC}"
-        read -r season_year
-
-        if [[ ! "$season_year" =~ ^[2-3][0-9]$ ]]; then
-            echo "Season year must be two digits."
-            continue
-        fi
-
-        while true; do
-            read -r -p "Season year entered: $season_year. Is this correct? [y/n] " confirm_year
-            case "$confirm_year" in
-                [Yy]|[Yy][Ee][Ss])
-                    break 2
-                    ;;
-                [Nn]|[Nn][Oo])
-                    echo "Re-enter season year."
-                    break
-                    ;;
-                *)
-                    echo "Please answer y or n."
-                    ;;
-            esac
-        done
-    done
 
     echo
     echo "Settings to write:"
@@ -199,7 +229,7 @@ create_settings() {
     echo "  language: $language"
     echo "  score_poll_timeout: $score_poll_timeout"
     echo "  score_timeout: $score_timeout"
-    echo "  seasonYear: $season_year"
+    echo "  seasonYear: $SEASON_YEAR"
     echo
 
     sudo mkdir -p "$BIN_DIR" "$INSTALL_DIR/pilots/scores"
@@ -214,7 +244,7 @@ create_settings() {
   "language": "$language",
   "score_poll_timeout": $score_poll_timeout,
   "score_timeout": $score_timeout,
-  "seasonYear": $season_year
+  "seasonYear": $SEASON_YEAR
 }
 EOF
 
@@ -225,7 +255,7 @@ EOF
 }
 
 install_runtime_files() {
-    step "7/11" "Installing services, scripts, and desktop image"
+    step "8/12" "Installing services, scripts, and desktop image"
 
     local tmp_dir="/tmp/aerojudge-setup-files"
     rm -rf "$tmp_dir"
@@ -296,7 +326,7 @@ disable_desktop_update_prompts() {
 }
 
 install_release_assets() {
-    step "8/11" "Installing latest AeroJudge release assets"
+    step "9/12" "Installing latest AeroJudge release assets"
 
     run_update_phase --download-only
     run_update_phase --install
@@ -322,15 +352,16 @@ run_update_phase() {
 }
 
 enable_services() {
-    step "9/11" "Enabling services"
+    step "10/12" "Enabling services"
 
     sudo systemctl enable judge.service
     sudo systemctl enable kiosk.service
 }
 
 validate_install() {
-    step "10/11" "Validating installed files and services"
+    step "11/12" "Validating installed files and services"
 
+    [ "$(bash "$IDENTITY_TOOL" read)" = "$DEVICE_IDENTITY" ] || fail "Board identity read-back does not match: $DEVICE_IDENTITY"
     [ -s "$BIN_DIR/judge.jar" ] || fail "$BIN_DIR/judge.jar is missing."
     [ -s "$INSTALL_DIR/figures/en/audio/instructions.mp3" ] || fail "Figures/audio assets are missing."
     [ -d "$INSTALL_DIR/pilots" ] || fail "$INSTALL_DIR/pilots directory is missing."
@@ -365,7 +396,7 @@ validate_install() {
 }
 
 finish() {
-    step "11/11" "Setup complete"
+    step "12/12" "Setup complete"
 
     echo
     echo -e "${GREEN}AeroJudge Device setup completed.${NC}"
@@ -389,6 +420,7 @@ finish() {
     echo "  pactl info | grep -E 'Server Name|Default Sink'"
     echo "  journalctl -u audio-hardware.service -u volume.service -n 80 --no-pager"
     echo
+    echo "Board identity: $DEVICE_IDENTITY"
     echo "Settings file: $SETTINGS_FILE"
     echo "Setup log: $LOG_FILE"
     echo
@@ -405,6 +437,7 @@ finish() {
 
 confirm_target
 verify_target
+collect_inputs
 expand_root_filesystem
 disable_desktop_update_prompts
 install_packages

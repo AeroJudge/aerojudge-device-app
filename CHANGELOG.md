@@ -8,6 +8,7 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Fresh setup now provisions the board identity through `device_identity.sh` before any SD card change, asks for identity and season year up front, and runs without further input until the reboot prompt. The identity is validated and shown in the setup summary.
 - Corrected RV-3028 provisioning to use level switching (mode 3) for the board's
   close main/backup voltages. Documented that driver configuration writes persist
   in RTC EEPROM and are not undone by software or basic boot-config rollback.
