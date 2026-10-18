@@ -125,10 +125,10 @@ Fresh setup writes settings directly to:
 The old flow used `/boot/settings.json`; do not use that location for current
 fresh-device setup.
 
-Setup currently prompts for `seasonYear` even though release tags now encode the
-season year as `vYY.MAJOR.MINOR`. A future approved setup/asset change should
-decide how to derive it from the release tag and validate it against
-figure-package metadata.
+Setup asks the builder for `seasonYear` and writes that value to
+`/var/opt/judge/settings.json`. The app release version does not select the
+figure season. Future figure-package selection and validation are separate work
+and are not part of this scripts migration.
 
 ## Version Checks
 
@@ -236,5 +236,5 @@ rm device_identity.sh
 
 - `attempt_auto_sync_scores` is currently re-added to `settings.json` by the
   app after startup. That is an app storage bug, not a setup-script setting.
-- `seasonYear` should become release-derived once figure-package metadata and a
-  separately approved setup/asset validation flow are in place.
+- Figure-package selection and season validation require separate design; do not
+  derive the figure season from the app release version.
