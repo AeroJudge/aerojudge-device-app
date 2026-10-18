@@ -1,27 +1,31 @@
-#!/bin/bash
-#
-# AeroJudge setup launcher for prepared base images.
-# This script fetches the current judge_setup.sh and runs it.
+#!/bin/sh
+# Compatibility entry point for existing devices and base images.
+# Keep this old URL available; the implementation lives in device-scripts.
+SCRIPTS_RAW_BASE_URL="${AEROJUDGE_SCRIPTS_RAW_BASE_URL:-https://raw.githubusercontent.com/AeroJudge/device-scripts/main}"
+while [ "${SCRIPTS_RAW_BASE_URL%/}" != "$SCRIPTS_RAW_BASE_URL" ]; do SCRIPTS_RAW_BASE_URL=${SCRIPTS_RAW_BASE_URL%/}; done
+export AEROJUDGE_SCRIPTS_RAW_BASE_URL="$SCRIPTS_RAW_BASE_URL"
 
-set -Eeuo pipefail
+# The caller may save this file under any name; never derive the target from $0.
+TARGET_URL="$SCRIPTS_RAW_BASE_URL/build_aerojudge.sh"
+SCRIPT_FILE=$(mktemp /tmp/aerojudge-forward-XXXXXX.sh) || {
+    echo "Could not create temporary file for build_aerojudge.sh" >&2
+    exit 1
+}
+trap 'rm -f -- "$SCRIPT_FILE" || echo "Could not remove $SCRIPT_FILE" >&2' 0
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-RAW_BASE_URL="${AEROJUDGE_RAW_BASE_URL:-https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main}"
-RELEASE_API_URL="${AEROJUDGE_RELEASE_API_URL:-https://api.github.com/repos/AeroJudge/aerojudge-device-app/releases/latest}"
-SETUP_SCRIPT="/home/judge/judge_setup.sh"
+if ! curl -fsSL "$TARGET_URL" -o "$SCRIPT_FILE"; then
+    echo "Could not download build_aerojudge.sh from $TARGET_URL" >&2
+    exit 1
+fi
+if [ ! -s "$SCRIPT_FILE" ] || ! bash -n "$SCRIPT_FILE"; then
+    echo "Downloaded build_aerojudge.sh is empty or has invalid shell syntax" >&2
+    exit 1
+fi
 
-cd /home/judge
-
-export AEROJUDGE_RAW_BASE_URL="$RAW_BASE_URL"
-export AEROJUDGE_RELEASE_API_URL="$RELEASE_API_URL"
-
-echo "Fetching AeroJudge setup script from:"
-echo "  $RAW_BASE_URL/scripts/judge_setup.sh"
-echo "Release API:"
-echo "  $RELEASE_API_URL"
-
-curl -fsSL "$RAW_BASE_URL/scripts/judge_setup.sh" -o "$SETUP_SCRIPT"
-chmod +x "$SETUP_SCRIPT"
-
-echo
-echo "Starting AeroJudge setup..."
-exec "$SETUP_SCRIPT"
+# Foreground execution preserves prompts and the existing systemd scope.
+# Do not use errexit: updater and identity callers depend on nonzero statuses.
+bash "$SCRIPT_FILE" "$@"
+EXIT_CODE=$?
+exit "$EXIT_CODE"

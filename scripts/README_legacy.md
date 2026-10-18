@@ -1,5 +1,9 @@
 # AeroJudge Device App Bootstrap Script Install
 
+Legacy hardware instructions. The legacy setup implementation is maintained in
+[device-scripts](https://github.com/AeroJudge/device-scripts). Its hardware prompts
+and installation behavior are unchanged by the repository move.
+
 1. Using the Raspberry Pi Imager available from the Raspberry site write the Raspberry Pi OS (32-bit) Desktop version to the SD card. Configure the relevant WiFi details, enable SSH and setup the user name judge (required) and password
 	- username : judge
 	- password : <*password*>
@@ -21,9 +25,9 @@ chmod +x LCD35B-show-V2
 5. Now run the following commands
 ```
 cd /home/judge
-wget -O judge_setup.sh https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main/scripts/judge_setup.sh
-chmod +x judge_setup.sh
-./judge_setup.sh
+wget -O judge_setup_legacy.sh https://raw.githubusercontent.com/AeroJudge/device-scripts/main/judge_setup_legacy.sh
+chmod +x judge_setup_legacy.sh
+./judge_setup_legacy.sh
 ```
 <br>
 

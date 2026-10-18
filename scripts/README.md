@@ -1,5 +1,8 @@
 # AeroJudge Device SD Card Setup
 
+Maintained setup implementation: [device-scripts](https://github.com/AeroJudge/device-scripts).
+This directory retains compatibility entry points and app-owned runtime files.
+
 These instructions are for current AeroJudge Device hardware:
 
 - serial numbers above `DPG-110`
@@ -29,28 +32,63 @@ The launcher downloads and runs the current production `judge_setup.sh`. The
 setup asks for device-specific settings, installs the application and services,
 validates the result, and offers to reboot.
 
-## Test an Unreleased Setup Script
+## Sources and testing
 
-The launcher normally downloads setup code from the production `main` branch of
-`AeroJudge/aerojudge-device-app`. To test setup code from an unreleased branch
-or fork, override both source endpoints before running the launcher:
+| Setting | Default | Supplies |
+|---|---|---|
+| `AEROJUDGE_SCRIPTS_RAW_BASE_URL` | `https://raw.githubusercontent.com/AeroJudge/device-scripts/main` | Setup/update/identity scripts, config profiles, wallpaper |
+| `AEROJUDGE_RAW_BASE_URL` | `https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main` | App and kiosk units/launchers, settings guide, legacy data |
+| `AEROJUDGE_RELEASE_API_URL` | `https://api.github.com/repos/AeroJudge/aerojudge-device-app/releases/latest` | Existing app release assets |
+
+Unset or empty settings use their defaults. Each override controls only its own
+source. Raw URLs identify repository/ref roots; do not append `/scripts`.
+Overrides apply to the current process and its children, not future device sessions.
+Selecting an app branch alone does not select migrated scripts.
+
+To test a scripts branch on a disposable fresh device, explicitly fetch its launcher:
 
 ```sh
 cd /home/judge
-export AEROJUDGE_RAW_BASE_URL="https://raw.githubusercontent.com/<owner>/<repo>/refs/heads/<branch>"
-export AEROJUDGE_RELEASE_API_URL="https://api.github.com/repos/<owner>/<repo>/releases/latest"
+export AEROJUDGE_SCRIPTS_RAW_BASE_URL="https://raw.githubusercontent.com/<owner>/device-scripts/refs/heads/<branch>"
+curl -fsSL "$AEROJUDGE_SCRIPTS_RAW_BASE_URL/build_aerojudge.sh" -o build_aerojudge.sh
+chmod +x build_aerojudge.sh
 ./build_aerojudge.sh
 ```
 
-The launcher exports those values before running `judge_setup.sh`, so the setup
-script, update fetcher, and release installer use the same test endpoints.
-Changing only the raw branch URL changes scripts, not release assets. If the
-branch requires matching binaries or service archives, publish a test release
-from the same repository and point `AEROJUDGE_RELEASE_API_URL` at that
-repository's releases API. The release endpoint must contain `judge.jar`,
-`figures.zip`, and `volume_service.zip` built from compatible source. Test
-release tags must use the stable `vYY.MAJOR.MINOR` format, for example
-`v26.1.0`.
+For an app-source test, additionally set this before invoking the launcher:
+
+```sh
+export AEROJUDGE_RAW_BASE_URL="https://raw.githubusercontent.com/<owner>/aerojudge-device-app/refs/heads/<branch>"
+```
+
+For matching release assets, independently set:
+
+```sh
+export AEROJUDGE_RELEASE_API_URL="https://api.github.com/repos/<owner>/<repo>/releases/latest"
+```
+
+The release still supplies `judge.jar`, `figures.zip` and `volume_service.zip`.
+Release tags retain `vYY.MAJOR.MINOR`, for example `v26.1.0`. Separate figure/volume
+package consumption and hardware-aware selection are later work. Scripts currently
+use `main`; no new version-selection mechanism is introduced here.
+
+## Repository ownership and compatibility
+
+Executable setup/maintenance scripts live at the repository root. Wallpaper lives
+in `assets/`. Current setup uses `config/profiles/pcb-3.61/config.txt` with unchanged
+contents. The stored 3.60 profile and `config/profiles/archive/pcb-3.50/config.txt`
+do not enable automatic board selection or expand supported hardware.
+
+The app repository retains judge/kiosk runtime files, restart helper, settings guide
+and legacy data. Existing raw URLs must remain usable by base images and deployed
+fetchers: old executable entry points will forward to this repository, while old
+config/image/unit/data URLs retain actual files. Do not retire those links without
+reviewing remaining device/image use (planned compatibility period: 12-18 months).
+
+After successful modern setup validation, `/home/judge/build_aerojudge.sh` and
+`/home/judge/judge_setup.sh` are removed before the reboot choice. The setup log
+remains. Failed installation/validation leaves entry scripts available; use the
+existing reimage recovery procedure rather than bypassing fresh-install guards.
 
 ## What Setup Installs
 
@@ -58,6 +96,8 @@ The setup script:
 
 - verifies Bullseye, 32-bit, and user `judge`
 - refuses to run if existing AeroJudge install state is found
+- asks for the board identity and the season year up front, writes identity
+  to the PCB EEPROM, then runs without input until the reboot prompt
 - expands the root filesystem to use the available SD card space
 - installs required packages
 - installs the AeroJudge boot configuration
@@ -71,6 +111,7 @@ The setup script:
 - fetches and installs release assets
 - validates services, release assets, audio assets, runtime directories, and
   the PCB 3.61+ boot configuration
+- removes the two one-time setup entry scripts after validation, retaining the log
 - asks whether to reboot
 
 ## Settings
@@ -157,7 +198,7 @@ Obtain and run over SSH as `judge`:
 
 ```sh
 cd /home/judge
-curl -fsSL https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main/scripts/device_identity.sh -o device_identity.sh
+curl -fsSL https://raw.githubusercontent.com/AeroJudge/device-scripts/main/device_identity.sh -o device_identity.sh
 chmod +x device_identity.sh
 ./device_identity.sh read
 sudo ./device_identity.sh write

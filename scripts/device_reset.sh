@@ -1,26 +1,31 @@
 #!/bin/sh
+# Compatibility entry point for existing devices and base images.
+# Keep this old URL available; the implementation lives in device-scripts.
+SCRIPTS_RAW_BASE_URL="${AEROJUDGE_SCRIPTS_RAW_BASE_URL:-https://raw.githubusercontent.com/AeroJudge/device-scripts/main}"
+while [ "${SCRIPTS_RAW_BASE_URL%/}" != "$SCRIPTS_RAW_BASE_URL" ]; do SCRIPTS_RAW_BASE_URL=${SCRIPTS_RAW_BASE_URL%/}; done
+export AEROJUDGE_SCRIPTS_RAW_BASE_URL="$SCRIPTS_RAW_BASE_URL"
 
-#
-# The following fixes some ownership errors that some devices had, removes all old contest data, and performs a device upgrade
-#
+# The caller may save this file under any name; never derive the target from $0.
+TARGET_URL="$SCRIPTS_RAW_BASE_URL/device_reset.sh"
+SCRIPT_FILE=$(mktemp /tmp/aerojudge-forward-XXXXXX.sh) || {
+    echo "Could not create temporary file for device_reset.sh" >&2
+    exit 1
+}
+trap 'rm -f -- "$SCRIPT_FILE" || echo "Could not remove $SCRIPT_FILE" >&2' 0
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-sudo chown judge:judge .judge_last_release
-sudo chown -R judge:judge /var/opt/judge
-sudo chmod -R go-w /var/opt/judge/
+if ! curl -fsSL "$TARGET_URL" -o "$SCRIPT_FILE"; then
+    echo "Could not download device_reset.sh from $TARGET_URL" >&2
+    exit 1
+fi
+if [ ! -s "$SCRIPT_FILE" ] || ! bash -n "$SCRIPT_FILE"; then
+    echo "Downloaded device_reset.sh is empty or has invalid shell syntax" >&2
+    exit 1
+fi
 
-cd /var/opt/judge
-rm *.log *.dat *.zip *.json
-rm pilots/scores/*
-
-cd ~
-rm .judge_last_release  
-curl -sfS https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main/scripts/fetch_update.sh -o /home/judge/fetch_update.sh
-chmod +x /home/judge/fetch_update.sh
-/home/judge/fetch_update.sh
-
-# Fix default network settings to match AeroJudge config
-# Comment out this line if running manually to keep the original (deprecated) defaults
-sed -i 's/"score_host":"192.168.1.4"/"score_host":"192.168.8.100"/;s/"score_http_port":8181/"score_http_port":80/' /var/opt/judge/settings.json
-
-# removes this script so it doesn't get accidentally run again
-rm device_reset.sh
+# Foreground execution preserves prompts and the existing systemd scope.
+# Do not use errexit: updater and identity callers depend on nonzero statuses.
+bash "$SCRIPT_FILE" "$@"
+EXIT_CODE=$?
+exit "$EXIT_CODE"

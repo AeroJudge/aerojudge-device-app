@@ -8,6 +8,14 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Moved setup/update/recovery implementations, stored boot profiles and wallpaper
+  to `device-scripts`, retaining old script URLs as forwarding entry points and
+  preserving app-owned runtime files and existing release assets.
+- Added `AEROJUDGE_SCRIPTS_RAW_BASE_URL` for script/config/wallpaper source overrides;
+  existing app-source and release API overrides retain their responsibilities.
+- Corrected the legacy setup command and remove the modern device-local setup
+  launcher/procedure only after successful validation, retaining setup logs.
+
 - Added `scripts/device_identity.sh` to read and write the board identity record (build mark, board revision, serial) in the RV-3028 user EEPROM, with standalone instructions in `scripts/README.md`.
 - Added `deviceSerialNumber` and `boardRevision` to `/api/getinfo`, read once at startup from the board EEPROM; null when no valid record is present.
 - Fixed where the score summary page showed a raw `-3` instead of `Deadline` for deadline penalties.

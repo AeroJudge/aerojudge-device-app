@@ -1,40 +1,31 @@
 #!/bin/sh
-# =============================================================================
-# fetch_update.sh - AeroJudge Update Fetcher
-# =============================================================================
-# This script is installed on the device and fetches/executes the latest
-# update script from GitHub. This allows the main update logic to be
-# updated remotely without needing to modify files on individual devices.
-#
-# Usage:
-#   /home/judge/fetch_update.sh                  # Legacy: full update (download + install)
-#   /home/judge/fetch_update.sh --download-only  # Phase 1: check + download assets
-#   /home/judge/fetch_update.sh --install        # Phase 2: backup, install, health check
-#
-# Exit Codes (passed through from judge_update.sh):
-#   0 = No update needed (already running latest version)
-#   1 = Error occurred during update
-#   2 = Update successfully applied / assets downloaded and ready
-# =============================================================================
+# Compatibility entry point for existing devices and base images.
+# Keep this old URL available; the implementation lives in device-scripts.
+SCRIPTS_RAW_BASE_URL="${AEROJUDGE_SCRIPTS_RAW_BASE_URL:-https://raw.githubusercontent.com/AeroJudge/device-scripts/main}"
+while [ "${SCRIPTS_RAW_BASE_URL%/}" != "$SCRIPTS_RAW_BASE_URL" ]; do SCRIPTS_RAW_BASE_URL=${SCRIPTS_RAW_BASE_URL%/}; done
+export AEROJUDGE_SCRIPTS_RAW_BASE_URL="$SCRIPTS_RAW_BASE_URL"
 
-RAW_BASE_URL="${AEROJUDGE_RAW_BASE_URL:-https://raw.githubusercontent.com/AeroJudge/aerojudge-device-app/main}"
-UPDATE_URL="$RAW_BASE_URL/scripts/judge_update.sh"
+# The caller may save this file under any name; never derive the target from $0.
+TARGET_URL="$SCRIPTS_RAW_BASE_URL/fetch_update.sh"
+SCRIPT_FILE=$(mktemp /tmp/aerojudge-forward-XXXXXX.sh) || {
+    echo "Could not create temporary file for fetch_update.sh" >&2
+    exit 1
+}
+trap 'rm -f -- "$SCRIPT_FILE" || echo "Could not remove $SCRIPT_FILE" >&2' 0
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-# Download the update script to a temp file so we can pass arguments to it.
-# The previous `curl | bash` pattern could not forward arguments.
-SCRIPT_FILE=$(mktemp /tmp/judge_update_XXXXXX.sh)
-curl -sfS "$UPDATE_URL" -o "$SCRIPT_FILE"
-CURL_EXIT=$?
-
-if [ $CURL_EXIT -ne 0 ]; then
-    echo "Error fetching update script (no internet?)" >&2
-    rm -f "$SCRIPT_FILE"
+if ! curl -fsSL "$TARGET_URL" -o "$SCRIPT_FILE"; then
+    echo "Could not download fetch_update.sh from $TARGET_URL" >&2
+    exit 1
+fi
+if [ ! -s "$SCRIPT_FILE" ] || ! bash -n "$SCRIPT_FILE"; then
+    echo "Downloaded fetch_update.sh is empty or has invalid shell syntax" >&2
     exit 1
 fi
 
-chmod +x "$SCRIPT_FILE"
+# Foreground execution preserves prompts and the existing systemd scope.
+# Do not use errexit: updater and identity callers depend on nonzero statuses.
 bash "$SCRIPT_FILE" "$@"
 EXIT_CODE=$?
-
-rm -f "$SCRIPT_FILE"
-exit $EXIT_CODE
+exit "$EXIT_CODE"
