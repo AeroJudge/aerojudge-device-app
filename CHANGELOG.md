@@ -9,7 +9,7 @@ assembly and preserved-history migration details are documented in
 ## Unreleased
 
 - Moved setup/update/recovery implementations, stored boot profiles and wallpaper
-  to `device-scripts`, retaining old script URLs as forwarding entry points and
+  to `device-scripts`, retaining the existing setup and updater URLs as forwarding entry points and
   preserving app-owned runtime files and existing release assets.
 - Added `AEROJUDGE_SCRIPTS_RAW_BASE_URL` for script/config/wallpaper source overrides;
   existing app-source and release API overrides retain their responsibilities.

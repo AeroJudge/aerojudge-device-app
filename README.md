@@ -28,7 +28,7 @@ they are not part of the normal development workflow.
 ## Device Setup
 
 Current production AeroJudge Device setup instructions are maintained in
-[`scripts/README.md`](scripts/README.md). Setup implementation is maintained in
+[device-scripts/SETUP.md](https://github.com/AeroJudge/device-scripts/blob/main/SETUP.md). Setup implementation is maintained in
 [device-scripts](https://github.com/AeroJudge/device-scripts). Existing
 `scripts/judge_setup.sh` URLs remain compatibility entry points for AeroJudge Device serial `DPG-110` and above with
 PCB revision `3.61+`.
