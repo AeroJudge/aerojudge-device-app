@@ -5,11 +5,15 @@ This directory retains compatibility entry points and app-owned runtime files.
 
 These instructions are for current AeroJudge Device hardware:
 
-- serial numbers above `DPG-110`
+- serial numbers `DPG-110` and above
 - PCB revision `3.61`
 - Raspberry Pi 4B
 
 The supported installation path uses the prepared AeroJudge base image.
+
+Migration validation on DPG-110 covered fresh setup, judging hardware, updates,
+rollback, reset, old entry points and download failures. Legacy setup has isolated
+test coverage; legacy hardware validation is deferred.
 
 ## Install a Device
 
