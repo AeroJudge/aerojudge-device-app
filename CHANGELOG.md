@@ -8,6 +8,9 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Removed duplicate figures and volume package sources, the unused figures
+  assembly descriptor, and their app release triggers; package repositories
+  now own those sources and releases.
 - Added installed `figuresVersion` and `volumeVersion` to `/api/getinfo`;
   unavailable or invalid package metadata reports an unknown version as null.
 - App releases now publish only `judge.jar`. The updater and fresh setup obtain

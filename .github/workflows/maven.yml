@@ -9,10 +9,7 @@ on:
     paths:
       - "pom.xml"
       - "judge/**"
-      - "figures/**"
-      - "volume_service/**"
       - "scripts/**"
-      - "assembly/**"
       - "!**/*.md"
       - "!**/*.txt"
   workflow_dispatch:
@@ -54,7 +51,7 @@ jobs:
         # Only product/device-relevant paths create field release tags.
         # Markdown and text-only changes are intentionally excluded by extension.
         releasable_files="$(printf '%s\n' "$changed_files" \
-          | grep -E '^(pom\.xml|judge/|figures/|volume_service/|scripts/|assembly/)' \
+          | grep -E '^(pom\.xml|judge/|scripts/)' \
           | grep -Eiv '\.(md|txt)$' || true)"
 
         if [ -z "$releasable_files" ]; then
