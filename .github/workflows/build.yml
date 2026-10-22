@@ -116,20 +116,9 @@ jobs:
           exit 1
         fi
 
-        mapfile -t figure_zips < <(find judge/target -maxdepth 1 -type f -name '*figures*.zip' | sort)
-        if [ "${#figure_zips[@]}" -ne 1 ]; then
-          echo "Release asset staging failed." >&2
-          echo "Expected exactly one figures zip in judge/target." >&2
-          echo "Found figures zip count: ${#figure_zips[@]}" >&2
-          printf 'Figures zips found:\n%s\n' "${figure_zips[@]:-<none>}" >&2
-          exit 1
-        fi
-
         cp "${jar_files[0]}" staging/judge.jar
-        cp "${figure_zips[0]}" staging/figures.zip
-        zip -qr staging/volume_service.zip volume_service
 
-        for asset in staging/judge.jar staging/figures.zip staging/volume_service.zip; do
+        for asset in staging/judge.jar; do
           if [ ! -s "$asset" ]; then
             echo "Release asset contract validation failed." >&2
             echo "Required staged asset is missing or empty: $asset" >&2
@@ -178,12 +167,8 @@ jobs:
         tag="${{ steps.release.outputs.release_tag }}"
         previous_stable_tag="${{ steps.release.outputs.previous_stable_tag }}"
         repo="${{ github.repository }}"
-        expected_assets=$'figures.zip\njudge.jar\nvolume_service.zip'
-        assets=(
-          staging/judge.jar
-          staging/figures.zip
-          staging/volume_service.zip
-        )
+        expected_assets='judge.jar'
+        assets=(staging/judge.jar)
 
         # Existing releases are rebuilds: preserve notes, replace only approved
         # assets, and fail before upload if unexpected assets are present.

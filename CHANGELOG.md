@@ -8,6 +8,12 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- App releases now publish only `judge.jar`. The updater and fresh setup obtain
+  `figures.zip` from the `device-figures-pkg` release and `volume_service.zip`
+  from the `device-volume-svc` release; installed paths and update behavior are
+  unchanged.
+- Renamed `AEROJUDGE_RELEASE_API_URL` to `AEROJUDGE_APP_RELEASE_API_URL` and added
+  `AEROJUDGE_FIGURES_RELEASE_API_URL` and `AEROJUDGE_VOLUME_RELEASE_API_URL`.
 - Moved setup/update/recovery implementations, stored boot profiles and wallpaper
   to `device-scripts`, retaining the existing setup and updater URLs as forwarding entry points and
   preserving app-owned runtime files and existing release assets.

@@ -89,8 +89,8 @@ For a manual device copy, rename the built JAR on the device:
 cp judge/target/judge-26.1.0.jar /var/opt/judge/bin/judge.jar
 ```
 
-GitHub release automation publishes stable asset names: `judge.jar`,
-`figures.zip`, and `volume_service.zip`.
+GitHub release automation publishes `judge.jar`. Figure and volume service
+packages are released from `device-figures-pkg` and `device-volume-svc`.
 
 ### Run AeroJudge Device App In Docker
 
