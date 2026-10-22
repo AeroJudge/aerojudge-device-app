@@ -8,6 +8,8 @@ public class InfoJson {
     private String deviceSerialNumber;
     private String boardRevision;
     private String appVersion;
+    private String figuresVersion;
+    private String volumeVersion;
 
     private List<InfoLine> info_lines;
 
@@ -53,6 +55,18 @@ public class InfoJson {
     }
     public void setAppVersion(String appVersion) {
         this.appVersion = appVersion;
+    }
+    public String getFiguresVersion() {
+        return figuresVersion;
+    }
+    public void setFiguresVersion(String figuresVersion) {
+        this.figuresVersion = figuresVersion;
+    }
+    public String getVolumeVersion() {
+        return volumeVersion;
+    }
+    public void setVolumeVersion(String volumeVersion) {
+        this.volumeVersion = volumeVersion;
     }
     public List<InfoLine> getInfo_lines() {
         return info_lines;

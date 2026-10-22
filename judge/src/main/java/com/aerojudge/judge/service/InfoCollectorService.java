@@ -3,6 +3,10 @@ package com.aerojudge.judge.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
 
@@ -12,6 +16,9 @@ import com.aerojudge.judge.dto.SettingDTO;
 import com.aerojudge.judge.utils.INA226PowerUtils;
 import com.aerojudge.judge.utils.LiPoBatteryEstimator;
 
+import com.aerojudge.judge.utils.SettingUtils;
+
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URI;
@@ -80,6 +87,8 @@ public class InfoCollectorService {
         InfoJson info = new InfoJson();
         info.setAppName("AeroJudge Device");
         info.setAppVersion(com.aerojudge.judge.JudgeApplication.getAppVersion());
+        info.setFiguresVersion(readPackageVersion(Path.of(SettingUtils.getApplicationConfigPath(), "figures", "package.json")));
+        info.setVolumeVersion(readPackageVersion(Path.of("/var/opt/volume_service/package.json")));
         info.setDeviceSerialNumber(deviceSerialNumber);
         info.setBoardRevision(boardRevision);
 
@@ -93,6 +102,24 @@ public class InfoCollectorService {
         return info;
     }
 
+
+    // Missing metadata means an unknown installed version, not a reason to reinstall.
+    private String readPackageVersion(Path path) {
+        try {
+            JsonElement metadata = JsonParser.parseString(Files.readString(path));
+            if (!metadata.isJsonObject()) {
+                return null;
+            }
+            JsonElement version = metadata.getAsJsonObject().get("version");
+            if (version == null || !version.isJsonPrimitive() || !version.getAsJsonPrimitive().isString()) {
+                return null;
+            }
+            String value = version.getAsString();
+            return value.isBlank() ? null : value;
+        } catch (IOException | JsonParseException e) {
+            return null;
+        }
+    }
 
     private InfoLine getDeviceIP() {
         String ip = "N/A";

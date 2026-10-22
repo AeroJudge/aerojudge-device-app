@@ -8,6 +8,8 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Added installed `figuresVersion` and `volumeVersion` to `/api/getinfo`;
+  unavailable or invalid package metadata reports an unknown version as null.
 - App releases now publish only `judge.jar`. The updater and fresh setup obtain
   `figures.zip` from the `device-figures-pkg` release and `volume_service.zip`
   from the `device-volume-svc` release; installed paths and update behavior are
