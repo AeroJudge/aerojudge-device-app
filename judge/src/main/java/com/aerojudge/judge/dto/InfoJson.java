@@ -1,7 +1,9 @@
 package com.aerojudge.judge.dto;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+@JsonPropertyOrder({"appName", "deviceSerialNumber", "appVersion", "figuresVersion", "boardRevision", "volumeVersion", "info_lines"})
 public class InfoJson {
     private String appName;
     // Board identity from the RV-3028 EEPROM; null when no valid record is present.
