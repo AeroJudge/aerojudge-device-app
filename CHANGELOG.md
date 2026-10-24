@@ -8,6 +8,11 @@ assembly and preserved-history migration details are documented in
 
 ## Unreleased
 
+- Redesigned the score summary for the 800x480 judge display with larger rows,
+  one-decimal scores, colour identifiers and scrolling for longer sequences.
+  Device scoring, navigation and caller keys are blocked while it is open;
+  flag display and jump-to-figure support are prepared for project 06 but unused.
+
 - Removed duplicate figures and volume package sources, the unused figures
   assembly descriptor, and their app release triggers; package repositories
   now own those sources and releases.

@@ -244,14 +244,15 @@
 
         let classFilter = localStorage.getItem("classFilter");
         let carouselLocked = false;  // Prevents navigation when summary modal is open
+        let summaryOpen = false;
+        var figureFlags = [];  // Populated by project 06; empty in project 23.
+        let pendingJumpIndex = null;
         let hasUnsavedScoreInput = false;
         let homeNavigationConfirmStep = 0;
 
         document.addEventListener('DOMContentLoaded', function () {
             var elems = document.querySelectorAll('.modal');
-            for (var i in sequenceJson) {
-                $('#ss_' + i + '_desc').text(sequenceJson[i].description);
-            }
+            $('#ss_rows').on('scroll', updateSummaryScrollNote);
             var instances = M.Modal.init(elems, {
                 dismissible:false,
                 startingTop: '1%',
@@ -261,28 +262,31 @@
                     if (modal.id === 'modal_summary' || modal.id === 'modal_unsaved_scores') {
                         carouselLocked = true;
                     }
-                    for (var i in scores) {
-                        var currentScore = '#ss_' + i + '_text';
-                        switch (scores[i]) {
-                            case -1:
-                                $(currentScore).text('Break');
-                                break;
-                            case -2:
-                                $(currentScore).text('N/O');
-                                break;
-                            case -3:
-                                $(currentScore).text('Deadline');
-                                break;
-                            default:
-                                $(currentScore).text(scores[i]);
-                                break;
-                        }
+                    if (modal.id === 'modal_summary') {
+                        summaryOpen = true;
+                    }
+                },
+                onOpenEnd: function(modal){
+                    if (modal.id === 'modal_summary') {
+                        // Measure only after Materialize has made the modal visible.
+                        $('#ss_rows').scrollTop(0);
+                        updateSummaryScrollNote();
                     }
                 },
                 onCloseEnd: function(modal){
                     // Unlock carousel when summary modal closes (Review or Save clicked)
                     if (modal.id === 'modal_summary') {
                         carouselLocked = false;
+                        summaryOpen = false;
+                        if (pendingJumpIndex !== null) {
+                            audiolongd.pause();
+                            audiolongd.currentTime = 0;
+                            // Prepare audio before the carousel callback changes score_index.
+                            shortdescription(pendingJumpIndex - score_index);
+                            setLongDescription(pendingJumpIndex - score_index);
+                            $('.carousel').carousel('set', pendingJumpIndex);
+                            pendingJumpIndex = null;
+                        }
                     }
                     if (modal.id === 'modal_unsaved_scores') {
                         carouselLocked = false;
@@ -585,20 +589,29 @@
         }
 
         function populateSummaryModal() {
-            // Clear existing dynamic rows (keep header)
-            $('#modal_summary .scoresummary').not(':first').remove();
+            var rows = $('#ss_rows').empty();
+            $('#modal_summary').toggleClass('ss-scrolling', numOfManeuvers > 12);
+            $('#ss_scroll_note').empty().addClass('ss-note-hidden');
 
             // Generate rows dynamically for each maneuver
             for (var i = 0; i < numOfManeuvers; i++) {
                 var desc = sequenceJson[i] ? sequenceJson[i].description : '';
                 var scoreText = formatScoreForDisplay(scores[i]);
 
-                var row = $('<div class="row scoresummary">' +
-                    '<div class="col s2 m3 right-align">Fig ' + (i + 1) + '</div>' +
-                    '<div class="col s9 m7" id="ss_' + i + '_desc">' + desc + '</div>' +
-                    '<div class="col s1 m2 right-align" id="ss_' + i + '_text">' + scoreText + '</div>' +
-                    '</div>');
-                $('#modal_summary .modal-footer').before(row);
+                var row = $('<div>').addClass('scoresummary ss-row');
+                $('<div>').addClass('ss-num').text(i + 1).appendTo(row);
+                $('<div>').addClass('ss-desc').attr('id', 'ss_' + i + '_desc').text(desc).appendTo(row);
+                var scoreCell = $('<div>').addClass('ss-score').appendTo(row);
+                var scoreLabel = $('<span>').attr('id', 'ss_' + i + '_text').text(scoreText).appendTo(scoreCell);
+                if (scores[i] === 0) scoreLabel.addClass('ss-zero');
+                else if (scores[i] === -1 || scores[i] === -3) scoreLabel.addClass('ss-penalty');
+                else if (scores[i] === -2) scoreLabel.addClass('ss-no');
+                var flagCell = $('<div>').addClass('ss-flag').appendTo(row);
+                if (figureFlags[i]) {
+                    row.addClass('flagged');
+                    $('<i>').addClass('material-icons').text('flag').appendTo(flagCell);
+                }
+                rows.append(row);
             }
         }
 
@@ -607,7 +620,34 @@
             if (score === -1) return 'Break';
             if (score === -2) return 'N/O';
             if (score === -3) return 'Deadline';
-            return score;
+            return Number(score).toFixed(1);
+        }
+
+        function updateSummaryScrollNote() {
+            var rows = document.getElementById('ss_rows');
+            var above = 0, below = 0, flagsAbove = 0, flagsBelow = 0;
+            // Count partially hidden rows too; allow one pixel for scroll rounding.
+            Array.from(rows.children).forEach(function(row) {
+                if (row.offsetTop < rows.scrollTop - 1) {
+                    above++;
+                    if (row.classList.contains('flagged')) flagsAbove++;
+                }
+                if (row.offsetTop + row.offsetHeight > rows.scrollTop + rows.clientHeight + 1) {
+                    below++;
+                    if (row.classList.contains('flagged')) flagsBelow++;
+                }
+            });
+            var parts = [];
+            if (above) parts.push(above + ' above' + (flagsAbove ? ' (' + flagsAbove + ' flagged)' : ''));
+            if (below) parts.push('Scroll for ' + below + ' more' + (flagsBelow ? ' (' + flagsBelow + ' flagged)' : ''));
+            $('#ss_scroll_note').text(parts.join(' · ')).toggleClass('ss-note-hidden', parts.length === 0);
+        }
+
+        // Project 06 will wire row selection to this hook; rows are not tappable in 23.
+        function jumpToFigure(index) {
+            if (!Number.isInteger(index) || index < 0 || index >= numOfManeuvers) return;
+            pendingJumpIndex = index;
+            $('#modal_summary').modal('close');
         }
 
         function submitScores(done = false) {
@@ -775,6 +815,8 @@
             if (!action) return;
 
             e.preventDefault();
+
+            if (summaryOpen) return;
 
             if (action == 'plus-half') addScore(0.5);
             if (action == 'minus-half') removeScore(0.5);
