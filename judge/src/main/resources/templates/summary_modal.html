@@ -1,57 +1,111 @@
 <!DOCTYPE html>
-
 <html xmlns:th="http://www.thymeleaf.org">
-  <body>
-
+<body>
     <div th:fragment="summary_modal">
         <style>
-            .comp_action {
-                font-size: 2rem;
+            #modal_summary {
+                top: 6px !important;
+                width: calc(100% - 16px);
+                height: 468px;
+                max-height: 468px !important;
+                overflow: hidden;
+                color: rgba(0, 0, 0, 0.87);
             }
-            .comp_action_text {
-                font-size: 2vw;
+            #modal_summary .ss-layout { display: flex; height: 100%; }
+            #modal_summary .modal-content {
+                flex: 1 1 auto;
+                min-width: 0;
+                padding: 6px 8px !important;
+                display: flex;
+                flex-direction: column;
             }
-            @media only screen and (min-width: 601px) {
-                .comp_action {
-                    font-size: 4rem;
-                }
-                .comp_action_text {
-                font-size: 3vw;
+            #modal_summary #ss_rows {
+                position: relative;
+                height: 456px;
+                flex: 0 0 456px;
+                overflow: hidden;
+                scrollbar-width: none;
             }
+            #modal_summary #ss_rows::-webkit-scrollbar { display: none; }
+            #modal_summary.ss-scrolling #ss_rows {
+                height: 418px;
+                flex-basis: 418px;
+                overflow-y: auto;
             }
+            #modal_summary .ss-row {
+                display: grid;
+                grid-template-columns: 2.1em minmax(0, 1fr) 4.6em 1.5em;
+                align-items: center;
+                column-gap: 6px;
+                height: 38px;
+                font-size: 22px;
+                line-height: 1.15;
+            }
+            #modal_summary .ss-num { text-align: right; font-weight: 600; }
+            #modal_summary .ss-desc {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-width: 0;
+            }
+            #modal_summary .ss-score { text-align: right; font-weight: 700; }
+            #modal_summary .ss-score span {
+                display: inline-block;
+                min-width: 2.6em;
+                padding: 0 0.2em;
+                border-radius: 4px;
+                text-align: center;
+            }
+            #modal_summary .ss-zero { background: #bdbdbd; color: #000; }
+            #modal_summary .ss-penalty { background: rgba(229, 57, 53, 0.35); color: #7f0000; }
+            #modal_summary .ss-no { background: rgba(142, 36, 170, 0.35); color: #38006b; }
+            #modal_summary .ss-flag { text-align: left; color: #d32f2f; }
+            #modal_summary .ss-flag .material-icons { font-size: 1.3em; line-height: 1; vertical-align: middle; }
+            #modal_summary .ss-row.flagged { background: #fff; }
+            #modal_summary #ss_scroll_note {
+                display: none;
+                flex: 0 0 34px;
+                align-items: center;
+                justify-content: center;
+                border-top: 2px solid rgba(0, 0, 0, 0.25);
+                font-size: 17px;
+                font-weight: 700;
+            }
+            #modal_summary.ss-scrolling #ss_scroll_note { display: flex; }
+            #modal_summary #ss_scroll_note.ss-note-hidden { visibility: hidden; }
+            #modal_summary .ss-actions {
+                flex: 0 0 172px;
+                padding: 8px;
+                border-left: 2px solid rgba(0, 0, 0, 0.2);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 44px;
+            }
+            #modal_summary .ss-title { font-size: 22px; font-weight: 800; line-height: 1.2; text-align: center; }
+            #modal_summary .btn-large {
+                width: 100%;
+                height: 58px;
+                line-height: 58px;
+                padding: 0;
+                font-size: 1.2rem;
+                font-weight: 700;
+            }
+            #modal_summary .ss-review { border: 1px solid #9e9e9e; box-shadow: none; }
         </style>
-        <div id="modal_summary" class="modal">
-            <div class="modal-content yellow">
-                <h6 class="black-text center hide-on-small-only">Score Summary</h6>
-                <!-- <h7 class="black-text hide-on-med-and-up">Score Summary</h7> -->
-                <div class="row scoresummary" style="font-weight: bold;">
-                <div class="col s2 m3 right-align hide-on-small-only">Figure</div>
-                <div class="col s9 m7 hide-on-small-only">Desc</div>
-                <div class="col s1 m2 right-align hide-on-small-only">Score</div>
+        <div id="modal_summary" class="modal yellow">
+            <div class="ss-layout">
+                <div class="modal-content">
+                    <div id="ss_rows"></div>
+                    <div id="ss_scroll_note" class="ss-note-hidden"></div>
                 </div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 1</div><div class="col s9 m7" id="ss_0_desc">Desc</div><div class="col s1 m2 right-align" id="ss_0_text" >-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 2</div><div class="col s9 m7" id="ss_1_desc">Desc</div><div class="col s1 m2 right-align" id="ss_1_text">-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 3</div><div class="col s9 m7" id="ss_2_desc">Desc</div><div class="col s1 m2 right-align" id="ss_2_text">-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 4</div><div class="col s9 m7" id="ss_3_desc">Desc</div><div class="col s1 m2 right-align" id="ss_3_text">-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 5</div><div class="col s9 m7" id="ss_4_desc">Desc</div><div class="col s1 m2 right-align" id="ss_4_text">-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 6</div><div class="col s9 m7" id="ss_5_desc">Desc</div><div class="col s1 m2 right-align" id="ss_5_text">-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 7</div><div class="col s9 m7" id="ss_6_desc">Desc</div><div class="col s1 m2 right-align" id="ss_6_text">-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 8</div><div class="col s9 m7" id="ss_7_desc">Desc</div><div class="col s1 m2 right-align" id="ss_7_text">-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 9</div><div class="col s9 m7" id="ss_8_desc">Desc</div><div class="col s1 m2 right-align" id="ss_8_text">-</div></div>
-                <div class="row scoresummary"><div class="col s2 m3 right-align">Fig 10</div><div class="col s9 m7" id="ss_9_desc">Desc</div><div class="col s1 m2 right-align" id="ss_9_text">-</div></div>
-                <div class="row scoresummary hide-on-small-only"><div class="col s2 m3 right-align"></div><div class="col s9 m7" id="ss_10_desc">Sound</div><div class="col s1 m2 right-align" id="ss_10_text">-</div></div>
-                <div class="row scoresummary hide-on-small-only"><div class="col s2 m3 right-align"></div><div class="col s9 m7" id="ss_11_desc">Airspace</div><div class="col s1 m2 right-align" id="ss_11_text">-</div></div>
-                <div class="modal-footer yellow">
-                    <div class="row">
-                        <div class="col s4 center-align">
-                            <button data-target="modal_summary" class="modal-action modal-close orange darken-1 btn-small">Review</button>
-                        </div>
-                        <div class="col s4 offset-s4 center-align">
-                            <button data-target="modal_summary" class="modal-action modal-close orange darken-1 btn-small" onclick="submitScores(true);">Save</button>
-                        </div>
-                    </div>
+                <div class="ss-actions">
+                    <div class="ss-title">Score Summary</div>
+                    <button data-target="modal_summary" class="modal-action modal-close btn-large grey lighten-4 black-text ss-review">Review</button>
+                    <button data-target="modal_summary" class="modal-action modal-close btn-large green darken-3 white-text" onclick="submitScores(true);">Save</button>
                 </div>
             </div>
         </div>
     </div>
 </body>
+</html>

@@ -6,7 +6,16 @@ Earlier release notes are preserved in `CHANGELOG_legacy.md`. Repository
 assembly and preserved-history migration details are documented in
 `migration/README.md`.
 
-## Unreleased
+## Latest:
+
+- Numeric score audio now uses three-digit tenths filenames (`000.mp3` through
+  `100.mp3`), requiring figures package 2026.4. Scoring increments are unchanged.
+- Added temporary figure-review flags: tap the large score area to toggle a
+  raised red flag and highlight the figure in the score summary. The flag is
+  hidden when unselected; the score area remains tappable.
+- Redesigned the score summary for the 800x480 judge display with larger rows,
+  one-decimal scores, colour identifiers and scrolling for longer sequences.
+  Device scoring, navigation and caller keys are blocked while it is open.
 
 - Removed duplicate figures and volume package sources, the unused figures
   assembly descriptor, and their app release triggers; package repositories
