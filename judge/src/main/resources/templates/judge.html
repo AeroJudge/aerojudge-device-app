@@ -14,6 +14,37 @@
             visibility: hidden;
         }
 
+        .figure-flag {
+            position: absolute;
+            left: 0;
+            top: 90px;
+            width: 345px;
+            height: 280px;
+            padding: 0;
+            border: 0;
+            border-radius: 48px;
+            background: transparent !important;
+            box-shadow: none;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            color: #d32f2f;
+            cursor: pointer;
+            z-index: 1;
+            touch-action: none;
+        }
+        .figure-flag .material-icons {
+            visibility: hidden;
+            position: absolute;
+            left: 230px;
+            top: 36px;
+            font-size: 56px;
+            line-height: 1;
+        }
+        .figure-flag.selected .material-icons { visibility: visible; }
+        /* Device keys can reveal focus after a tap or carousel return. Keep the target invisible. */
+        .figure-flag:focus, .figure-flag:focus-visible, .figure-flag:active { outline: none; }
+        .figure-flag:disabled { pointer-events: none; }
+
         .figure-wrapper svg path {
             fill: rgb(6, 223, 252) !important;
         }
@@ -134,6 +165,10 @@
             <a class="btn waves-effect white grey-text darken-text-2" onclick="carouselNext();" id="btnnext">next</a>
         </div>
         <div th:each="maneuver,iterStat : ${maneuvers}" class="carousel-item yellow black-text" href="#one!">
+            <button type="button" class="figure-flag" th:attr="data-figure-index=${iterStat.index}"
+                    aria-label="Flag figure for review" aria-pressed="false">
+                <i class="material-icons" aria-hidden="true">flag</i>
+            </button>
             <div class="row" style="margin-bottom: 0px; height: 10px;">
                 <p><span class="pilotname" th:text="${pilot.name + ' ('+pilot_class.substring(0,3)+' '+roundType.substring(0,3)+')'}"></span></p>
             </div>
@@ -143,7 +178,7 @@
                         <!-- <button data-target="modal_summary" class="btn modal-trigger">Modal</button> -->
                         <div class="section" style="height: 80%">
                             <h1 style="font-family: digitalFont; font-size: 40vh; line-height: 10vh;  "
-                                th:id="'score_'+ ${iterStat.index}">10.0</h1>
+                                th:id="'score_'+ ${iterStat.index}">10</h1>
                         </div>
                     </div>
                     <div class="col s8">
@@ -245,7 +280,7 @@
         let classFilter = localStorage.getItem("classFilter");
         let carouselLocked = false;  // Prevents navigation when summary modal is open
         let summaryOpen = false;
-        var figureFlags = [];  // Populated by project 06; empty in project 23.
+        var figureFlags = [];  // Review reminders for this judging page only; never saved or synced.
         let pendingJumpIndex = null;
         let hasUnsavedScoreInput = false;
         let homeNavigationConfirmStep = 0;
@@ -807,7 +842,46 @@
         $("#buttonsDiv").hide();
         function showAllButtons() {
             $("#buttonsDiv").show();
+            $('.figure-flag').prop('disabled', true);
         }
+
+        function toggleFigureFlag(index) {
+            if (!Number.isInteger(index) || index < 0 || index >= numOfManeuvers ||
+                    index !== score_index || carouselLocked || $('#buttonsDiv').is(':visible')) return;
+            figureFlags[index] = !figureFlags[index];
+            $('.figure-flag[data-figure-index="' + index + '"]')
+                .toggleClass('selected', figureFlags[index])
+                .attr('aria-pressed', String(figureFlags[index]));
+            audio.pause();
+            audio.currentTime = 0;
+            audio = new Audio(audioBasePath + '/score/' + (figureFlags[index] ? 'flagged' : 'flag_cleared') + '.mp3');
+            audio.volume = 1.0;
+            // Optional recordings arrive in future figures packages; missing clips must not affect flagging.
+            audio.play().catch(function() {});
+        }
+
+        $('.figure-flag').each(function() {
+            let startX, startY, pointerDown = false, dragged = false;
+            $(this).on('touchstart mousedown', function(e) {
+                // The large score target owns touches here, not the carousel behind it.
+                e.stopPropagation();
+            }).on('pointerdown', function(e) {
+                startX = e.clientX;
+                startY = e.clientY;
+                pointerDown = true;
+                dragged = false;
+            }).on('pointermove', function(e) {
+                if (pointerDown && Math.hypot(e.clientX - startX, e.clientY - startY) > 10) dragged = true;
+            }).on('pointerup pointercancel', function(e) {
+                pointerDown = false;
+                if (e.type === 'pointercancel') dragged = true;
+            }).on('click', function(e) {
+                e.stopPropagation();
+                // A drag is not a tap; detail 0 allows keyboard activation after a drag.
+                if (dragged && e.detail !== 0) return;
+                toggleFigureFlag(Number(this.dataset.figureIndex));
+            });
+        });
 
         //add button listeners
         $(document).on("keydown", function (e) {
