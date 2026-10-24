@@ -8,6 +8,8 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
+- Numeric score audio now uses three-digit tenths filenames (`000.mp3` through
+  `100.mp3`), requiring figures package 2026.4. Scoring increments are unchanged.
 - Added temporary figure-review flags: tap the large score area to toggle a
   raised red flag and highlight the figure in the score summary. The flag is
   hidden when unselected; the score area remains tappable.

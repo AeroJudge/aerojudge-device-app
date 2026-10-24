@@ -515,10 +515,10 @@
 
         function textToSpeechCustomMessage(text) {
             if (isNumber(text)) {
-                //this is a number lets build url to wave file
+                // Numeric clips use three-digit integer tenths (figures package 2026.4).
                 audio.pause();
                 audio.currentTime = 0;
-                var audio_url = audioBasePath + '/score/' + text + '.mp3';
+                var audio_url = audioBasePath + '/score/' + String(Math.round(text * 10)).padStart(3, '0') + '.mp3';
                 audio = new Audio(audio_url);
                 audio.volume = 1.0;
                 audio.play();
