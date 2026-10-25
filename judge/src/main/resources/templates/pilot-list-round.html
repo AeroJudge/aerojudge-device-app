@@ -11,7 +11,12 @@
         }
 
         .pilot_class {
-            font-size: calc(5.5vw + 2.5vh) !important;
+            font-size: 3rem !important;
+            margin-bottom: 0.5rem;
+        }
+
+        .carousel.carousel-slider .carousel-item h2.pilot_class {
+            font-weight: 400;
         }
 
         .pilot_name {
@@ -63,12 +68,15 @@
         <h2 th:text="${pilot.getClassString()}" class="pilot_class">First Panel</h2>
 
         <!-- Show rounds and judge button -->
-        <div style="margin-top: 20px;">
+        <div style="margin-top: 0;">
             <div style="display: flex; justify-content: center; gap: 15px;">
-                <div style="border-bottom: 1px solid #999; padding: 5px 15px; min-width: 140px;">
-                    <div style="text-align: center; font-weight: 500; font-size: 1.1rem; color: #666;" th:text="${activeRoundType}">KNOWN</div>
+                <div style="border-bottom: 1px solid #999; padding: 0 15px 5px; min-width: 140px;">
+                    <div style="text-align: center; font-weight: 400; font-size: 3rem; line-height: 1.1; margin-bottom: 1.5rem; color: #666;" th:text="${activeRoundType}">KNOWN</div>
                     <div style="text-align: center; font-size: 1.1rem; color: #666;">
                         Round <span style="font-weight: 700; font-size: 2rem; color: #1976d2;" th:text="${activeRoundNum}"></span>
+                        <span th:if="${comp.sequences == 2 and #strings.equalsIgnoreCase(activeRoundType, 'KNOWN')}">
+                            &middot; Sequence <span style="font-weight: 700; font-size: 2rem; color: #1976d2;" th:text="${pilotScores[pilot.primary_id].getActiveSequence('KNOWN')}"></span>
+                        </span>
                     </div>
                 </div>
             </div>

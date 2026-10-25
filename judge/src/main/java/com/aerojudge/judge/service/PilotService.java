@@ -12,6 +12,8 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.xml.XMLConstants;
@@ -31,6 +33,9 @@ import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
@@ -56,6 +61,9 @@ public class PilotService {
 
     private static final String PILOT_SCORE_DIR = SettingUtils.getApplicationConfigPath() + "/pilots/scores/";
     private static final String PILOT_DAT_PATH = SettingUtils.getApplicationConfigPath() + "/pilots.dat";
+    private static final ObjectMapper LOCAL_SCORE_MAPPER = new ObjectMapper()
+            .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+            .enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     private String PILOT_DAT_URL = "http://SCORE_HOST:SCORE_HTTP_PORT/scorepad/pilots.dat";
     private String SCORE_UPLOAD_URL = "http://SCORE_HOST:SCORE_HTTP_PORT/scorepadupload/";
     @Autowired
@@ -84,9 +92,25 @@ public class PilotService {
         if(!isPilots()){
             getPilotsFileFromScore();
         }
+        return readPilots(activeOnly, false);
+    }
+
+    /** Completion preview must never fetch a roster or create score files. */
+    public List<Pilot> getLocalActivePilots() throws ParserConfigurationException, SAXException, IOException {
+        return readPilots(true, true);
+    }
+
+    private List<Pilot> readPilots(boolean activeOnly, boolean strict)
+            throws ParserConfigurationException, SAXException, IOException {
         // Get Document Builder
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        if (strict) {
+            // A local-only completion check must not resolve external XML resources.
+            dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        }
 
         // parse XML file
         DocumentBuilder db = dbf.newDocumentBuilder();
@@ -102,6 +126,7 @@ public class PilotService {
 
         logger.debug ("Pilot count: " + newList.getLength());
         List<Pilot> pilots = new ArrayList<>();
+        Set<String> pilotIds = new HashSet<>();
         for (int temp = 0; temp < newList.getLength(); temp++) {
             Node node = newList.item(temp);
             if (node.getNodeType() == Node.ELEMENT_NODE) {
@@ -134,6 +159,16 @@ public class PilotService {
                 Node droppedNode = element.getElementsByTagName("dropped").item(0);
                 boolean dropped = droppedNode != null
                         && Boolean.parseBoolean(droppedNode.getTextContent());
+                if (strict) {
+                    String activeText = element.getElementsByTagName("active").item(0).getTextContent();
+                    String droppedText = droppedNode == null ? "" : droppedNode.getTextContent();
+                    if (!("true".equalsIgnoreCase(activeText) || "false".equalsIgnoreCase(activeText))
+                            || !(droppedText.isEmpty() || "true".equalsIgnoreCase(droppedText)
+                                || "false".equalsIgnoreCase(droppedText))
+                            || primary_id.isBlank() || !pilotIds.add(primary_id)) {
+                        throw new IOException("Invalid or duplicate pilot roster data.");
+                    }
+                }
                 Boolean freestyle = Boolean
                         .parseBoolean(element.getElementsByTagName("freestyle").item(0).getTextContent());
                 Boolean spread_spectrum = Boolean
@@ -143,6 +178,9 @@ public class PilotService {
                 NodeList classesList = doc.getElementsByTagName("classes");
                 Element class_element = (Element) classesList.item(index);
                 String _class = class_element.getElementsByTagName("class").item(0).getTextContent();
+                if (strict && _class.isBlank()) {
+                    throw new IOException("Missing pilot class in local roster.");
+                }
                 Pilot pilot = new Pilot(freestyle, comments, addr2, addr1, _class, index, active, comp_id, frequency,
                         spread_spectrum, secondary_id, airplane, name, missing_pilot_panel, primary_id);
                 // Active-pilot lists exclude pilots dropped in Score.
@@ -201,6 +239,52 @@ public class PilotService {
         Path path = Paths.get(filepath);
         String pilotScoresJson = Files.readAllLines(path).get(0);
         return new Gson().fromJson(pilotScoresJson, PilotScores.class);
+    }
+
+    public PilotScores getLocalPilotScores(Pilot pilot) throws IOException {
+        // Validate raw required counters before DTO getters can supply defaults.
+        Path directory = Paths.get(PILOT_SCORE_DIR).toAbsolutePath().normalize();
+        Path path = directory.resolve(pilot.getPrimary_id() + ".json").normalize();
+        if (!directory.equals(path.getParent())) {
+            throw new IOException("Invalid pilot score filename.");
+        }
+        String json = Files.readString(path);
+        JsonNode data = LOCAL_SCORE_MAPPER.readTree(json);
+        if (data == null || !data.isObject()
+                || !pilot.getPrimary_id().equals(data.path("primary_id").asText())
+                || !data.path("scores").isArray()) {
+            throw new IOException("Invalid score data for " + pilot.getName() + ".");
+        }
+        for (String field : List.of("activeRoundByType", "activeSequenceByType")) {
+            JsonNode counter = data.path(field).path("KNOWN");
+            if (!counter.isIntegralNumber() || !counter.canConvertToInt() || counter.intValue() < 1) {
+                throw new IOException("Missing or invalid Known counter for " + pilot.getName() + ".");
+            }
+        }
+        Set<String> records = new HashSet<>();
+        for (JsonNode record : data.path("scores")) {
+            if (!record.isObject() || !record.path("round").isIntegralNumber()
+                    || !record.path("round").canConvertToInt() || !record.path("sequence").isIntegralNumber()
+                    || !record.path("sequence").canConvertToInt() || !record.path("type").isTextual()
+                    || !record.path("scores").isArray()) {
+                throw new IOException("Malformed saved score record for " + pilot.getName() + ".");
+            }
+            String type = record.path("type").textValue().toUpperCase();
+            int round = record.path("round").intValue();
+            int sequence = record.path("sequence").intValue();
+            if (!List.of("KNOWN", "UNKNOWN", "FREESTYLE").contains(type)
+                    || round < 1 || sequence < 1 || sequence > 2 || record.path("scores").isEmpty()
+                    || !records.add(type + ":" + round + ":" + sequence)) {
+                throw new IOException("Malformed or duplicate saved score record.");
+            }
+            for (JsonNode value : record.path("scores")) {
+                if (!value.isNumber() || !Float.isFinite(value.floatValue())
+                        || value.floatValue() < -3 || value.floatValue() > 10) {
+                    throw new IOException("Invalid saved score value.");
+                }
+            }
+        }
+        return new Gson().fromJson(json, PilotScores.class);
     }
 
     public PilotScores savePilotScoresToFile(PilotScores scores) throws IOException {

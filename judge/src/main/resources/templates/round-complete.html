@@ -8,6 +8,7 @@
 
   <link href="materialize/css/material_lcons.css" rel="stylesheet">
   <link href="materialize/css/materialize.min.css" type="text/css" rel="stylesheet" media="screen,projection" />
+  <link href="device-toast.css" type="text/css" rel="stylesheet" />
   <style>
     body {
       height: 100vh;
@@ -89,12 +90,17 @@
     </div>
   </div>
 
+  <script src="materialize/js/materialize.js"></script>
   <script th:inline="javascript">
     /*<![CDATA[*/
     const language = /*[[${settings.language}]]*/ 'en';
     const attemptAutoSyncScores = /*[[${settings.attempt_auto_sync_scores}]]*/ false;
+    const singleSequenceCompleted = /*[[${singleSequenceCompleted}]]*/ false;
 
     document.addEventListener('DOMContentLoaded', function () {
+      if (singleSequenceCompleted) {
+        M.toast({ html: 'Known round completed as single-sequence.', classes: 'toastMessage', displayLength: 5000 });
+      }
       const audio = new Audio('/man/' + language + '/audio/roundcompleted.mp3');
       audio.onerror = function () {};
       audio.play().catch(function () {});
