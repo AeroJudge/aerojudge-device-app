@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 140">
+  <title>Form C — wind direction right</title>
+  <path d="M220 32 H510 V10 L590 70 L510 130 V108 H220 Z" fill="white" stroke="black" stroke-width="7"/>
+  <rect x="10" y="28" width="230" height="84" fill="black"/>
+  <g font-family="Arial, sans-serif" text-anchor="middle">
+    <text x="87" y="82" fill="white" font-size="30" font-weight="700">FORM</text>
+    <text x="192" y="91" fill="white" font-size="60" font-weight="700">C</text>
+    <text x="380" y="80" fill="black" font-size="28">Wind Direction</text>
+  </g>
+</svg>

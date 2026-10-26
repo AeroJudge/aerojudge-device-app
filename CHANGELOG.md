@@ -8,6 +8,7 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
+- Update pilot selection screens to have a graphical B-C selector to match Arest forms and a new wrong pilot button for an easy exit to the pilot list.
 - Store auto-sync preference with scoring settings, retaining the selected value
   across event loads and refreshes. Save it together with scoring mode; default
   to Off when no competition preference exists.
