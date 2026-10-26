@@ -50,6 +50,7 @@
   <!-- CSS  -->
   <link href="materialize/css/material_lcons.css" rel="stylesheet">
   <link href="materialize/css/materialize.min.css" type="text/css" rel="stylesheet" media="screen,projection" />
+  <link href="/device-gesture.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <link href="device-toast.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <script src="jquery-3.6.4.min.js"></script>
   <script src="device-keys.js"></script>
@@ -152,6 +153,7 @@
 
   <!--  Scripts-->
   <script src="materialize/js/materialize.js"></script>
+  <script src="/device-carousel.js"></script>
   <script src="fab-sync-feedback.js"></script>
   <script>
     var language = '[[${settings.language}]]';
@@ -215,6 +217,7 @@
       fullWidth: true,
       indicators: false
     }).height(windowHeight);
+    disableCarouselTouchDrag(document.querySelector('.carousel.carousel-slider'));
 
     
     function closeAllModals() {
