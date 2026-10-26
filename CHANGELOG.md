@@ -8,6 +8,9 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
+- Store auto-sync preference with scoring settings, retaining the selected value
+  across event loads and refreshes. Save it together with scoring mode; default
+  to Off when no competition preference exists.
 - Adjusted class and type text sizing on pilot selection screens for better readability.
 - Added explicit Home confirmation to finish an eligible RBR Known round with
   one saved sequence for every active pilot, preserving scores and the event's

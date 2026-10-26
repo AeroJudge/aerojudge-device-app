@@ -110,6 +110,13 @@ public class CompService {
     public CompDTO createCompFromRequest(CompDTO compDTO) throws IOException, SAXException, ParserConfigurationException {
         // We have a new comp from the API.
 
+        // Event loads and refreshes omit this preference; retain it before replacing the comp.
+        if (compDTO.getAttempt_auto_sync_scores() == null) {
+            isCurrentComp();
+            compDTO.setAttempt_auto_sync_scores(this.compDTO != null
+                    && Boolean.TRUE.equals(this.compDTO.getAttempt_auto_sync_scores()));
+        }
+
         this.compDTO = compDTO;
         this.saveCompToFile();
         return this.compDTO;
@@ -168,6 +175,10 @@ public class CompService {
                 resultStringBuilder.append(line).append("\n");
             }
             this.compDTO = new Gson().fromJson(resultStringBuilder.toString(),CompDTO.class);
+
+            if (this.compDTO.getAttempt_auto_sync_scores() == null) {
+                this.compDTO.setAttempt_auto_sync_scores(false);
+            }
 
             // Double check there's no null strings.
             boolean saveFile = false;

@@ -49,12 +49,21 @@ class CompletionTemplateTest {
         context.setVariable("completedRoundLabel", "Sportsman Known Round 3");
         context.setVariable("completedPilotCount", 2);
         for (boolean autoSync : List.of(false, true)) {
-            settings.setAttempt_auto_sync_scores(autoSync);
+            context.setVariable("attemptAutoSyncScores", autoSync);
             for (boolean completed : List.of(false, true)) {
                 context.setVariable("singleSequenceCompleted", completed);
                 String html = engine.process("round-complete", context);
                 assertTrue(html.contains("const singleSequenceCompleted = " + completed));
+                assertTrue(html.contains("const attemptAutoSyncScores = " + autoSync));
                 Files.writeString(output.resolve("complete-" + autoSync + "-" + completed + ".html"), html);
+            }
+            context.setVariable("lineNumber", 1);
+            context.setVariable("judgeId", 3);
+            for (String mode : List.of("byRound", "global")) {
+                context.setVariable("scoreMode", mode);
+                String html = engine.process("adminDevice", context);
+                assertTrue(html.contains("const attemptAutoSyncScores = " + autoSync));
+                Files.writeString(output.resolve("admin-" + mode + "-" + autoSync + ".html"), html);
             }
         }
     }

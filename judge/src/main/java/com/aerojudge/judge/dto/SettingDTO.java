@@ -10,7 +10,6 @@ public class SettingDTO {
     private int score_timeout = 10; //seconds
     private String language = "en";
     private int seasonYear = 26;
-    private boolean attempt_auto_sync_scores = false;
     
     public SettingDTO() {
     }
@@ -69,14 +68,6 @@ public class SettingDTO {
     }
     public void setSeasonYear(int seasonYear) {
         this.seasonYear = seasonYear;
-    }
-
-    public boolean isAttempt_auto_sync_scores() {
-        return attempt_auto_sync_scores;
-    }
-
-    public void setAttempt_auto_sync_scores(boolean attempt_auto_sync_scores) {
-        this.attempt_auto_sync_scores = attempt_auto_sync_scores;
     }
 
 }

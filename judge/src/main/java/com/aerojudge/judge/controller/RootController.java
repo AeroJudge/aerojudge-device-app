@@ -434,6 +434,9 @@ public class RootController {
             model.addAttribute("singleSequenceCompleted", false);
         }
         model.addAttribute("settings", settingService.getSettings());
+        model.addAttribute("attemptAutoSyncScores",
+                "byRound".equalsIgnoreCase(compService.getComp().getScore_mode())
+                && Boolean.TRUE.equals(compService.getComp().getAttempt_auto_sync_scores()));
         return "round-complete";
     }
 
@@ -472,8 +475,11 @@ public class RootController {
 
         if (compService.isCurrentComp()) {
             model.addAttribute("scoreMode", compService.getComp().getScore_mode());
+            model.addAttribute("attemptAutoSyncScores",
+                    Boolean.TRUE.equals(compService.getComp().getAttempt_auto_sync_scores()));
         } else {
             model.addAttribute("scoreMode", "global");
+            model.addAttribute("attemptAutoSyncScores", false);
         }
         return "adminDevice";
     }

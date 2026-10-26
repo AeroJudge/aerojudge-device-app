@@ -22,6 +22,16 @@ public class CompDTO {
     private int unknown_sequences = 0;
     private int judge_id = 1;
     private String sequence_type = "std";
+    // Null distinguishes an omitted partial-update value from explicit Off.
+    private Boolean attempt_auto_sync_scores;
+
+    public Boolean getAttempt_auto_sync_scores() {
+        return attempt_auto_sync_scores;
+    }
+
+    public void setAttempt_auto_sync_scores(Boolean attempt_auto_sync_scores) {
+        this.attempt_auto_sync_scores = attempt_auto_sync_scores;
+    }
 
     public CompDTO() {
         this.comp_id = 0;

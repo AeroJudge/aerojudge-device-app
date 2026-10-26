@@ -118,7 +118,7 @@ public class APIController {
 
     /**
      * Update local comp settings without contacting Score server.
-     * Accepts: sequences (int), sequenceType (String), score_mode (String)
+     * Accepts: sequences (int), sequenceType (String), score_mode (String), attempt_auto_sync_scores (Boolean)
      */
     @PostMapping("/api/comp/local")
     public ResponseEntity<String> updateLocalCompSettings(@RequestBody CompDTO comp)
@@ -132,7 +132,7 @@ public class APIController {
             return new ResponseEntity<>(new Gson().toJson(result), HttpStatus.BAD_REQUEST);
         }
 
-        if (currentComp.getSequences() != comp.getSequences()) {
+        if (comp.getSequences() > 0 && currentComp.getSequences() != comp.getSequences()) {
             Map<String, Object> blockPayload = scoreResolverService.evaluateFormatChangeBlock();
             if (blockPayload != null) {
                 return new ResponseEntity<>(new Gson().toJson(blockPayload), HttpStatus.CONFLICT);
@@ -163,6 +163,10 @@ public class APIController {
             }
             currentComp.setScore_mode(comp.getScore_mode());
             logger.info("Updated score_mode to: {}", comp.getScore_mode());
+        }
+
+        if (comp.getAttempt_auto_sync_scores() != null) {
+            currentComp.setAttempt_auto_sync_scores(comp.getAttempt_auto_sync_scores());
         }
 
         // Save locally without Score contact

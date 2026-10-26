@@ -282,7 +282,7 @@
     const scoreMode = /*[[${scoreMode}]]*/ 'global';
     const lineNumber = /*[[${lineNumber}]]*/ 1;
     const judgeId = /*[[${judgeId}]]*/ 1;
-    const attemptAutoSyncScores = /*[[${settings.attempt_auto_sync_scores}]]*/ false;
+    const attemptAutoSyncScores = /*[[${attemptAutoSyncScores}]]*/ false;
 
     // Store original values for rollback
     let originalLineNumber = lineNumber;
@@ -380,20 +380,20 @@
     $("#saveScoringMode").click(function(e) {
       e.preventDefault();
       var selectedMode = $('input[name="score_mode"]:checked').val();
-      var selectedAutoSync = selectedMode === 'byRound'
-        && $('input[name="attempt_auto_sync_scores"]:checked').val() === 'true';
+      var selectedAutoSync = $('input[name="attempt_auto_sync_scores"]:checked').val() === 'true';
 
       $.ajax({
         type: "POST",
         url: "/api/comp/local",
         data: JSON.stringify({
-          score_mode: selectedMode
+          score_mode: selectedMode,
+          attempt_auto_sync_scores: selectedAutoSync
         }),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function (data) {
           if (data.result === "ok") {
-            saveAutoSyncScoresSetting(selectedAutoSync);
+            M.toast({ html: 'Scoring mode saved', classes: 'green', displayLength: 5000 });
           } else {
             M.toast({ html: 'Error: ' + data.message, classes: 'red', displayLength: 5000 });
           }
@@ -403,38 +403,6 @@
         }
       });
     });
-
-    function saveAutoSyncScoresSetting(selectedAutoSync) {
-      $.ajax({
-        type: "GET",
-        url: "/api/settings",
-        dataType: "json",
-        success: function (currentSettings) {
-          currentSettings.attempt_auto_sync_scores = selectedAutoSync;
-
-          $.ajax({
-            type: "POST",
-            url: "/api/settings",
-            data: JSON.stringify(currentSettings),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (data) {
-              if (data.result === "ok") {
-                M.toast({ html: 'Scoring mode saved', classes: 'green', displayLength: 5000 });
-              } else {
-                M.toast({ html: 'Mode saved, but auto sync setting failed: ' + data.message, classes: 'red', displayLength: 5000 });
-              }
-            },
-            error: function () {
-              M.toast({ html: 'Mode saved, but auto sync setting failed', classes: 'red', displayLength: 5000 });
-            }
-          });
-        },
-        error: function () {
-          M.toast({ html: 'Mode saved, but current settings could not be loaded', classes: 'red', displayLength: 5000 });
-        }
-      });
-    }
 
     // Save Device Identity - show confirmation modal
     $("#saveDeviceIdentity").click(function(e) {
