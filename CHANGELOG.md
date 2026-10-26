@@ -8,6 +8,18 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
+- Update pilot selection screens to have a graphical B-C selector to match Arest forms and a new wrong pilot button for an easy exit to the pilot list.
+- Store auto-sync preference with scoring settings, retaining the selected value
+  across event loads and refreshes. Save it together with scoring mode; default
+  to Off when no competition preference exists.
+- Adjusted class and type text sizing on pilot selection screens for better readability.
+- Added explicit Home confirmation to finish an eligible RBR Known round with
+  one saved sequence for every active pilot, preserving scores and the event's
+  two-sequence setting. Completion retains the Round Complete and auto-sync flow.
+- Block judging input during Home completion checks and confirmations, retain
+  unsaved input on cancellation/failure, and report local-data and partial save
+  failures with recovery guidance.
+
 - Numeric score audio now uses three-digit tenths filenames (`000.mp3` through
   `100.mp3`), requiring figures package 2026.4. Scoring increments are unchanged.
 - Added temporary figure-review flags: tap the large score area to toggle a

@@ -54,6 +54,10 @@ import com.aerojudge.judge.service.ScheduleService;
 import com.aerojudge.judge.service.ScoreResolverService;
 import com.aerojudge.judge.service.SequenceService;
 import com.aerojudge.judge.service.SettingService;
+import com.aerojudge.judge.service.KnownRoundCompletionService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.support.RequestContextUtils;
 
 @RestController
 public class APIController {
@@ -77,6 +81,35 @@ public class APIController {
     private ScheduleService scheduleService;
     @Autowired
     private ScoreResolverService scoreResolverService;
+    @Autowired
+    private KnownRoundCompletionService knownRoundCompletionService;
+
+    @GetMapping("/api/scores/rbr-known-round-completion/preview")
+    public ResponseEntity<Map<String, Object>> previewKnownRoundCompletion() {
+        Map<String, Object> result = knownRoundCompletionService.previewKnownRoundCompletion();
+        return ResponseEntity.status("ok".equals(result.get("result")) ? 200 : 500)
+                .header("Cache-Control", "no-store").body(result);
+    }
+
+    @PostMapping("/api/scores/rbr-known-round-completion/apply")
+    public ResponseEntity<Map<String, Object>> applyKnownRoundCompletion(@RequestBody Map<String, Integer> payload,
+            HttpServletRequest request, HttpServletResponse response) {
+        Integer expectedRoundId = payload.get("expectedRoundId");
+        if (expectedRoundId == null || expectedRoundId < 0) {
+            return ResponseEntity.badRequest().body(Map.of("result", "fail", "message", "A round ID is required."));
+        }
+        Map<String, Object> result = knownRoundCompletionService.applyKnownRoundCompletion(expectedRoundId);
+        if ("ok".equals(result.get("result"))) {
+            Map<String, Object> flash = RequestContextUtils.getOutputFlashMap(request);
+            flash.put("completedRoundLabel", result.get("roundLabel"));
+            flash.put("completedPilotCount", result.get("pilotsAdvancedCount"));
+            flash.put("singleSequenceCompleted", true);
+            // An abandoned/lost response must not donate its toast to a later ordinary completion.
+            RequestContextUtils.saveOutputFlashMap("/round-complete?completedRoundId=" + expectedRoundId, request, response);
+            return ResponseEntity.ok(result);
+        }
+        return ResponseEntity.status("validation".equals(result.get("failureKind")) ? 409 : 500).body(result);
+    }
 
     @GetMapping("/api/comp")
     public CompDTO getComp() throws IOException, ParserConfigurationException, SAXException {
@@ -85,7 +118,7 @@ public class APIController {
 
     /**
      * Update local comp settings without contacting Score server.
-     * Accepts: sequences (int), sequenceType (String), score_mode (String)
+     * Accepts: sequences (int), sequenceType (String), score_mode (String), attempt_auto_sync_scores (Boolean)
      */
     @PostMapping("/api/comp/local")
     public ResponseEntity<String> updateLocalCompSettings(@RequestBody CompDTO comp)
@@ -99,7 +132,7 @@ public class APIController {
             return new ResponseEntity<>(new Gson().toJson(result), HttpStatus.BAD_REQUEST);
         }
 
-        if (currentComp.getSequences() != comp.getSequences()) {
+        if (comp.getSequences() > 0 && currentComp.getSequences() != comp.getSequences()) {
             Map<String, Object> blockPayload = scoreResolverService.evaluateFormatChangeBlock();
             if (blockPayload != null) {
                 return new ResponseEntity<>(new Gson().toJson(blockPayload), HttpStatus.CONFLICT);
@@ -130,6 +163,10 @@ public class APIController {
             }
             currentComp.setScore_mode(comp.getScore_mode());
             logger.info("Updated score_mode to: {}", comp.getScore_mode());
+        }
+
+        if (comp.getAttempt_auto_sync_scores() != null) {
+            currentComp.setAttempt_auto_sync_scores(comp.getAttempt_auto_sync_scores());
         }
 
         // Save locally without Score contact

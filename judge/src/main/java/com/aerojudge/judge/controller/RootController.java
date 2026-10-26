@@ -343,6 +343,8 @@ public class RootController {
         model.addAttribute("activeSequence", activeSequenceForType);
         model.addAttribute("roundType", roundType.toUpperCase());
         model.addAttribute("scoreMode", compService.getComp().getScore_mode());
+        RoundDTO judgingRound = roundService.getScoringRound();
+        model.addAttribute("judgingRoundId", judgingRound == null ? null : judgingRound.getRound_id());
         model.addAttribute("sequenceType", sequenceType);
         model.addAttribute("sequenceFolderPath", sequenceFolderPath);
         model.addAttribute("pilot_class", pilot.getClassString());
@@ -428,7 +430,13 @@ public class RootController {
         if (!model.containsAttribute("completedPilotCount")) {
             model.addAttribute("completedPilotCount", null);
         }
+        if (!model.containsAttribute("singleSequenceCompleted")) {
+            model.addAttribute("singleSequenceCompleted", false);
+        }
         model.addAttribute("settings", settingService.getSettings());
+        model.addAttribute("attemptAutoSyncScores",
+                "byRound".equalsIgnoreCase(compService.getComp().getScore_mode())
+                && Boolean.TRUE.equals(compService.getComp().getAttempt_auto_sync_scores()));
         return "round-complete";
     }
 
@@ -467,8 +475,11 @@ public class RootController {
 
         if (compService.isCurrentComp()) {
             model.addAttribute("scoreMode", compService.getComp().getScore_mode());
+            model.addAttribute("attemptAutoSyncScores",
+                    Boolean.TRUE.equals(compService.getComp().getAttempt_auto_sync_scores()));
         } else {
             model.addAttribute("scoreMode", "global");
+            model.addAttribute("attemptAutoSyncScores", false);
         }
         return "adminDevice";
     }

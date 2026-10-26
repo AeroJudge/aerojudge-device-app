@@ -139,6 +139,17 @@
             border: 1px solid #9e9e9e;
             box-shadow: none;
         }
+        body.home-locked .carousel, body.home-locked #buttonsDiv,
+        body.home-locked .fixed-action-btn { pointer-events: none; }
+        #modal_unsaved_scores.completion-guard { width: 95%; max-height: 94%; }
+        #modal_unsaved_scores.completion-guard .modal-content { padding: 16px 22px !important; }
+        #modal_unsaved_scores.completion-guard .guard-icon { display: none; }
+        #modal_unsaved_scores.completion-guard h3 { font-size: 2.5rem; margin-bottom: 12px; }
+        #modal_unsaved_scores.completion-guard p { font-size: 1.65rem; }
+        #modal_unsaved_scores.completion-guard .btn-large {
+            padding: 0 12px; text-transform: none; width: 100%;
+        }
+        #homeCompletionError { margin-top: 12px !important; color: #b71c1c; font-size: 1.3rem !important; }
     </style>
     <!-- CSS  -->
     <link href="materialize/css/material_lcons.css" rel="stylesheet">
@@ -222,7 +233,7 @@
         <div class="modal-footer white">
             <div class="row" style="margin-bottom: 0;">
                 <div class="col s5 left-align">
-                    <button class="modal-close btn-large grey lighten-4 black-text guard-cancel">Cancel</button>
+                    <button id="homeNavigationCancel" class="btn-large grey lighten-4 black-text guard-cancel" onclick="cancelHomeNavigation();">Cancel</button>
                 </div>
                 <div class="col s7 right-align">
                     <button id="unsavedScoreGuardConfirm" class="btn-large red accent-4 white-text" onclick="confirmHomeNavigation();">I Understand</button>
@@ -264,6 +275,7 @@
         const roundType =  /*[[${roundType}]]*/ ;
         const pilot_class =  /*[[${pilot_class}]]*/ ;
         const scoreMode =  /*[[${scoreMode}]]*/ 'global';
+        const judgingRoundId = /*[[${judgingRoundId}]]*/ null;
         const sequenceJson = JSON.parse( /*[[${sequencesjson}]]*/);
         var audio = new Audio();
 
@@ -284,6 +296,11 @@
         let pendingJumpIndex = null;
         let hasUnsavedScoreInput = false;
         let homeNavigationConfirmStep = 0;
+        let homeNavigationActive = false;
+        let homeRequestPending = false;
+        let homeCompletionEligible = false;
+        let homeCompletionRetryBlocked = false;
+        let scoreSubmissionPending = false;
 
         document.addEventListener('DOMContentLoaded', function () {
             var elems = document.querySelectorAll('.modal');
@@ -325,6 +342,8 @@
                     }
                     if (modal.id === 'modal_unsaved_scores') {
                         carouselLocked = false;
+                        homeNavigationActive = false;
+                        $('body').removeClass('home-locked');
                         resetHomeNavigationGuard();
                     }
                 }
@@ -392,6 +411,7 @@
         }
 
         function longDescription() {
+            if (homeNavigationActive) return;
             // Stop short description if playing, so caller audio takes priority
             if (audio && !audio.paused) {
                 audio.pause();
@@ -464,6 +484,7 @@
         }
 
         function toggleDir() {
+            if (homeNavigationActive) return;
             currentDirLetter = currentDirLetter === 'B' ? 'C' : 'B';
             updateDirectionUI();
         }
@@ -478,6 +499,12 @@
 
         function resetHomeNavigationGuard() {
             homeNavigationConfirmStep = 0;
+            homeCompletionEligible = false;
+            homeRequestPending = false;
+            $('#modal_unsaved_scores').removeClass('completion-guard');
+            $('#homeCompletionError').remove();
+            $('#homeNavigationCancel').prop('disabled', false).text('Cancel');
+            $('#unsavedScoreGuardConfirm').prop('disabled', false).show();
             $('#unsavedScoreGuardTitle').text('Unsaved Scores');
             $('#unsavedScoreGuardMessage').text('Scores have not been saved and will be lost.');
             $('#unsavedScoreGuardConfirm').text('I Understand');
@@ -488,29 +515,154 @@
                 event.preventDefault();
                 event.stopPropagation();
             }
+            if (homeNavigationActive || summaryOpen || scoreSubmissionPending) return;
+            resetHomeNavigationGuard();
+            if (scoreMode === 'byRound' && roundType === 'KNOWN' && sequence === 2) {
+                openHomeGuard(true);
+                if (homeCompletionRetryBlocked) {
+                    showHomeError('Completion may have changed saved data. Do not retry; give this device to the Contest Director or Scorekeeper.', false);
+                } else {
+                    previewHomeCompletion();
+                }
+            } else {
+                ordinaryHomeNavigation();
+            }
+        }
 
+        function openHomeGuard(completion) {
+            homeNavigationActive = true;
+            carouselLocked = true;
+            $('body').addClass('home-locked');
+            $('#modal_unsaved_scores').toggleClass('completion-guard', completion).modal('open');
+        }
+
+        function setHomePending(pending) {
+            homeRequestPending = pending;
+            $('#homeNavigationCancel, #unsavedScoreGuardConfirm').prop('disabled', pending);
+        }
+
+        function showHomeError(message, canRecheck) {
+            setHomePending(false);
+            homeNavigationConfirmStep = canRecheck ? -1 : 0;
+            $('#unsavedScoreGuardTitle').text('Round Completion');
+            $('#unsavedScoreGuardMessage').text('Your judging input has been kept.');
+            $('#homeCompletionError').remove();
+            $('<p id="homeCompletionError" role="alert"></p>').text(message)
+                .appendTo('#modal_unsaved_scores .modal-content');
+            $('#homeNavigationCancel').text('Return to Judging');
+            $('#unsavedScoreGuardConfirm').text('Recheck').toggle(canRecheck);
+        }
+
+        function ordinaryHomeNavigation() {
+            homeCompletionEligible = false;
             if (!hasUnsavedScores()) {
                 window.location.href = '/';
                 return;
             }
-
             resetHomeNavigationGuard();
             homeNavigationConfirmStep = 1;
-            $('#modal_unsaved_scores').modal('open');
+            openHomeGuard(false);
+        }
+
+        function previewHomeCompletion() {
+            if (homeRequestPending || homeCompletionRetryBlocked) return;
+            setHomePending(true);
+            $('#homeCompletionError').remove();
+            $('#unsavedScoreGuardTitle').text('Checking Round');
+            $('#unsavedScoreGuardMessage').text('Checking saved sequence 1 scores for all active pilots...');
+            $('#unsavedScoreGuardConfirm').show().text('Checking...');
+            $.ajax({
+                url: '/api/scores/rbr-known-round-completion/preview',
+                dataType: 'json', cache: false, timeout: 10000,
+                success: function (data) {
+                    setHomePending(false);
+                    if (data.result !== 'ok' || typeof data.viable !== 'boolean') {
+                        showHomeError(data.message || 'Could not check round completion.', true);
+                        return;
+                    }
+                    if (data.roundId != null && data.roundId !== judgingRoundId) {
+                        showHomeError('The active round has changed. Return to judging; this page cannot finish a different round.', false);
+                        return;
+                    }
+                    if (!data.viable) {
+                        ordinaryHomeNavigation();
+                        return;
+                    }
+                    if (data.roundId !== judgingRoundId || data.roundNum !== round
+                            || String(data.className).toUpperCase() !== pilot_class.toUpperCase()
+                            || !Array.isArray(data.pilotsToAdvance) || !data.pilotsToAdvance.includes(primary_id)) {
+                        showHomeError('This judging page does not match the active round and pilot cohort.', false);
+                        return;
+                    }
+                    homeCompletionEligible = true;
+                    homeNavigationConfirmStep = hasUnsavedScores() ? 1 : 2;
+                    $('#unsavedScoreGuardTitle').text(hasUnsavedScores() ? 'Unsaved Scores' : 'Finish Round?');
+                    $('#unsavedScoreGuardMessage').text(hasUnsavedScores()
+                        ? 'Unsaved sequence 2 scores will be discarded. Saved sequence 1 scores will be kept, and the round will close for all pilots.'
+                        : 'Finish this Known round with one sequence for all pilots?');
+                    $('#homeNavigationCancel').text(hasUnsavedScores() ? 'Cancel' : 'Continue Sequence 2');
+                    $('#unsavedScoreGuardConfirm').text(hasUnsavedScores() ? 'I Understand' : 'Finish Round');
+                },
+                error: function (xhr) {
+                    const data = xhr.responseJSON || {};
+                    const message = data.result === 'fail' && typeof data.message === 'string' && data.message.trim()
+                        ? data.message : 'Could not check round completion. Check the connection and try Recheck.';
+                    showHomeError(message, true);
+                }
+            });
+        }
+
+        function cancelHomeNavigation() {
+            if (homeRequestPending) return;
+            $('#modal_unsaved_scores').modal('close');
         }
 
         function confirmHomeNavigation() {
+            if (homeRequestPending) return;
+            if (homeNavigationConfirmStep === -1) {
+                previewHomeCompletion();
+                return;
+            }
             if (homeNavigationConfirmStep === 1) {
                 homeNavigationConfirmStep = 2;
                 $('#unsavedScoreGuardTitle').text('Are You Sure?');
-                $('#unsavedScoreGuardMessage').text('Are you sure? This cannot be undone.');
-                $('#unsavedScoreGuardConfirm').text('Leave and Discard Scores');
+                $('#unsavedScoreGuardMessage').text(homeCompletionEligible
+                    ? 'Discard these unsaved sequence 2 scores and finish the round for all pilots?'
+                    : 'Are you sure? This cannot be undone.');
+                $('#unsavedScoreGuardConfirm').text(homeCompletionEligible ? 'Discard and Finish' : 'Leave and Discard Scores');
                 return;
             }
 
             if (homeNavigationConfirmStep === 2) {
-                window.location.href = '/';
+                if (homeCompletionEligible) applyHomeCompletion();
+                else window.location.href = '/';
             }
+        }
+
+        function applyHomeCompletion() {
+            if (homeRequestPending || homeCompletionRetryBlocked) return;
+            setHomePending(true);
+            $('#unsavedScoreGuardConfirm').text('Finishing...');
+            $.ajax({
+                type: 'POST', url: '/api/scores/rbr-known-round-completion/apply',
+                contentType: 'application/json; charset=utf-8', dataType: 'json', timeout: 30000,
+                data: JSON.stringify({ expectedRoundId: judgingRoundId }),
+                success: function (data) {
+                    if (data.result === 'ok' && data.roundClosed === true) {
+                        window.location.replace('/round-complete?completedRoundId=' + judgingRoundId);
+                    } else {
+                        homeCompletionRetryBlocked = true;
+                        showHomeError('Completion outcome is unknown. Do not retry; ask the Contest Director or Scorekeeper to check this device.', false);
+                    }
+                },
+                error: function (xhr) {
+                    const data = xhr.responseJSON || {};
+                    const safeToRecheck = data.result === 'fail' && data.recoveryRequired === false
+                        && (data.failureKind === 'validation' || data.failureKind === 'read');
+                    homeCompletionRetryBlocked = !safeToRecheck;
+                    showHomeError(data.message || 'Completion outcome is unknown. Do not retry; ask the Contest Director or Scorekeeper to check this device.', safeToRecheck);
+                }
+            });
         }
 
         function textToSpeechCustomMessage(text) {
@@ -686,6 +838,7 @@
         }
 
         function submitScores(done = false) {
+            if (homeNavigationActive || scoreSubmissionPending) return;
             console.log("Scores: " + JSON.stringify(scores));
             if (done !== true) {
                 return;
@@ -704,6 +857,7 @@
                 type: roundType,
                 scores: scores
             }
+            scoreSubmissionPending = true;
             $.ajax({
                 type: "POST",
                 url: "/api/score",
@@ -717,6 +871,7 @@
                     }
                 },
                 error: function (errObj) {
+                    scoreSubmissionPending = false;
                     let message = 'Could not save score.';
                     try {
                         message = JSON.parse(errObj.responseText).message || message;
@@ -731,6 +886,7 @@
         }
 
         function addScore(increment) {
+            if (homeNavigationActive) return;
             if (increment == 0.5) {
                 //check if scoring is half
                 var scoring = sequenceJson[score_index].scoring;
@@ -758,6 +914,7 @@
         }
 
         function removeScore(increment) {
+            if (homeNavigationActive) return;
             if (increment == 0.5) {
                 //check if scoring is half
                 var scoring = sequenceJson[score_index].scoring;
@@ -780,6 +937,7 @@
         }
 
         function setScore(score) {
+            if (homeNavigationActive) return;
             if (score == -1 || score == -2 || score == -3) {
                 //check if scoring is half
                 var scoring = sequenceJson[score_index].scoring;
@@ -841,6 +999,7 @@
         }
         $("#buttonsDiv").hide();
         function showAllButtons() {
+            if (homeNavigationActive) return;
             $("#buttonsDiv").show();
             $('.figure-flag').prop('disabled', true);
         }
@@ -890,7 +1049,7 @@
 
             e.preventDefault();
 
-            if (summaryOpen) return;
+            if (summaryOpen || homeNavigationActive) return;
 
             if (action == 'plus-half') addScore(0.5);
             if (action == 'minus-half') removeScore(0.5);
