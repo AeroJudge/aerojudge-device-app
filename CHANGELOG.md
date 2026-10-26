@@ -8,7 +8,13 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
-- Update pilot selection screens to have a graphical B-C selector to match Arest forms and a new wrong pilot button for an easy exit to the pilot list.
+*PR Pending*
+- Added a shared browser gesture policy using horizontal overscroll suppression
+  to prevent swipe navigation from bypassing intended kiosk workflows. Resolves issue #22.
+
+*PR #26*
+- Update pilot selection screens to have a graphical B-C selector to match Arest forms 
+  and a new wrong pilot button for an easy exit to the pilot list.
 - Store auto-sync preference with scoring settings, retaining the selected value
   across event loads and refreshes. Save it together with scoring mode; default
   to Off when no competition preference exists.
@@ -20,6 +26,7 @@ assembly and preserved-history migration details are documented in
   unsaved input on cancellation/failure, and report local-data and partial save
   failures with recovery guidance.
 
+*PR #20*
 - Numeric score audio now uses three-digit tenths filenames (`000.mp3` through
   `100.mp3`), requiring figures package 2026.4. Scoring increments are unchanged.
 - Added temporary figure-review flags: tap the large score area to toggle a
@@ -29,6 +36,7 @@ assembly and preserved-history migration details are documented in
   one-decimal scores, colour identifiers and scrolling for longer sequences.
   Device scoring, navigation and caller keys are blocked while it is open.
 
+*Mono-repo Split
 - Removed duplicate figures and volume package sources, the unused figures
   assembly descriptor, and their app release triggers; package repositories
   now own those sources and releases.
@@ -48,6 +56,7 @@ assembly and preserved-history migration details are documented in
 - Corrected the legacy setup command and remove the modern device-local setup
   launcher/procedure only after successful validation, retaining setup logs.
 
+*Prior Changes*
 - Added `scripts/device_identity.sh` to read and write the board identity record (build mark, board revision, serial) in the RV-3028 user EEPROM, with standalone instructions in `scripts/README.md`.
 - Added `deviceSerialNumber` and `boardRevision` to `/api/getinfo`, read once at startup from the board EEPROM; null when no valid record is present.
 - Fixed where the score summary page showed a raw `-3` instead of `Deadline` for deadline penalties.
