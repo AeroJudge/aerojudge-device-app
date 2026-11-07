@@ -12,8 +12,8 @@ public class RoundDTO {
      *              "round_num": 1,             // What is the comp round num, should be the same accross all devices on line.
      *              "sched_id": "SPO2023s",     // What's the sequence?
      *              "sequences": 2,             // How many seqs to score in this round
-     *              "started_at": "2026-05-16T10:15:30-04:00",
-     *              "closed_at": "2026-05-16T10:25:30-04:00"
+     *              "round_start": "2026-05-16T14:15:30Z",
+     *              "round_end": "2026-05-16T14:25:30Z"
      *          }
      *
      * Rounds object would look like this:   (See RoundsDTO.java)
@@ -35,8 +35,14 @@ public class RoundDTO {
     private String sched_id = null;
     private String sched_desc = null;
     private int sequences = 1;
-    private String started_at = null;
-    private String closed_at = null;
+    private String round_start = null;
+    private Boolean round_start_trusted;
+    private String round_end = null;
+    private Boolean round_end_trusted;
+    public Boolean getRound_start_trusted() { return round_start_trusted; }
+    public void setRound_start_trusted(Boolean value) { round_start_trusted = value; }
+    public Boolean getRound_end_trusted() { return round_end_trusted; }
+    public void setRound_end_trusted(Boolean value) { round_end_trusted = value; }
 
     public RoundDTO() {
     }
@@ -72,8 +78,8 @@ public class RoundDTO {
         return sequences;
     }
     public void setSequences(int sequences) { this.sequences = sequences; }
-    public String getStarted_at() { return started_at; }
-    public void setStarted_at(String started_at) { this.started_at = started_at; }
-    public String getClosed_at() { return closed_at; }
-    public void setClosed_at(String closed_at) { this.closed_at = closed_at; }
+    public String getRound_start() { return round_start; }
+    public void setRound_start(String round_start) { this.round_start = round_start; }
+    public String getRound_end() { return round_end; }
+    public void setRound_end(String round_end) { this.round_end = round_end; }
 }

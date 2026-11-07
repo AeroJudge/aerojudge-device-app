@@ -1,7 +1,7 @@
 package com.aerojudge.judge.service;
 
 import java.io.*;
-import java.time.OffsetDateTime;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
 import com.aerojudge.judge.dto.RoundDTO;
@@ -22,6 +22,8 @@ public class RoundsService {
 
     private final String ROUNDS_FILE_NAME = SettingUtils.getApplicationConfigPath() + "/rounds.json";
     private RoundsDTO roundsDTO;
+    @Autowired
+    private DeviceClockService deviceClockService;
 
     public RoundsService() {
         try {
@@ -100,11 +102,13 @@ public class RoundsService {
 
         this.roundsDTO.setScoringRoundNum(i);
 
-        if (r.getStarted_at() == null) {
-            // ISO-8601 with offset is the starting format for future round ordering/audit use.
-            r.setStarted_at(getRoundTimestamp());
+        if (r.getRound_start() == null) {
+            var capture = deviceClockService.captureTimestamp();
+            r.setRound_start(capture.timestamp());
+            r.setRound_start_trusted(capture.trusted());
         }
-        r.setClosed_at(null);
+        r.setRound_end(null);
+        r.setRound_end_trusted(null);
         if (!saveRoundsToFile()) {
             res.put("message", "Could not save active round state.");
             res.put("success", Boolean.FALSE);
@@ -142,7 +146,9 @@ public class RoundsService {
             return res;
         }
 
-        r.setClosed_at(getRoundTimestamp());
+        var capture = deviceClockService.captureTimestamp();
+        r.setRound_end(capture.timestamp());
+        r.setRound_end_trusted(capture.trusted());
         this.roundsDTO.setScoringRoundNum(null);
         if (!saveRoundsToFile()) {
             res.put("message", "Could not save closed round state.");
@@ -374,7 +380,4 @@ public class RoundsService {
         return (currentTopRound + 1);
     }
 
-    private String getRoundTimestamp() {
-        return OffsetDateTime.now().toString();
-    }
 }

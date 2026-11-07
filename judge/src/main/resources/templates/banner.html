@@ -9,7 +9,7 @@
           position:absolute;
           z-index:2;
           right:0;
-          margin-right: 50px
+          margin-right: 190px
         }
       </style>
       <div class="line_judge_banner">
@@ -109,7 +109,26 @@
         }
       </style>
 
-      <a class="btn-flat btn-small icon-btn" onclick="toggleStatus();"><i class="material-icons" style="font-size: 2.2rem" >info_outline</i></a>
+      <style>
+        .clock-info-controls { position:absolute; right:10px; z-index:1000; display:flex; align-items:center; gap:14px; }
+        .clock-info-controls button { background:transparent; border:2px solid currentColor; border-radius:3px; box-sizing:border-box; height:30px; padding:0 6px; font:inherit; font-weight:600; cursor:pointer; line-height:26px; }
+        .clock-info-controls .clock-trusted { color:#24752a; }
+        .clock-info-controls .clock-untrusted { color:#c62828; }
+        .clock-info-controls .clock-none { color:#bdbdbd; text-decoration:line-through; }
+        .banner-modal-open .line_judge_banner,
+        .banner-modal-open .clock-info-controls,
+        .banner-modal-open #clockExplanation,
+        .banner-modal-open #statusInfo { visibility:hidden; }
+        #clockExplanation { position:absolute; right:10px; top:40px; max-width:360px; padding:10px 14px; background:#eee; color:#212121; border:1px solid #aaa; border-radius:4px; z-index:1001; font-size:1.2rem; cursor:pointer; }
+      </style>
+      <div class="clock-info-controls">
+        <button type="button" id="clockIndicator"
+                th:class="${clockState == 'NONE'} ? 'clock-none' : (${clockTrusted} ? 'clock-trusted' : 'clock-untrusted')"
+                onclick="document.getElementById('clockExplanation').classList.toggle('hidden');">CLOCK</button>
+        <button type="button" style="color:black" onclick="toggleStatus();">INFO</button>
+      </div>
+      <button type="button" id="clockExplanation" class="hidden" onclick="this.classList.add('hidden');"
+              th:text="${clockState == 'NONE'} ? 'No supported device clock is installed.' : (${clockTrusted} ? 'Device time is trusted.' : 'Device time cannot be trusted.')"></button>
 
       <div id="statusInfo" class="status-info right grey lighten-3 hidden" onclick="toggleStatus();">
         <span id="stsmsg">Please wait...</span>
@@ -149,6 +168,18 @@
 
       <script>
         let statusInfoInterval = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+          const modals = Array.from(document.querySelectorAll('.modal'));
+          // Follow Materialize visibility without replacing page-specific modal callbacks.
+          const updateBannerVisibility = function () {
+            const visible = modals.some(modal => modal.classList.contains('open') || modal.style.display === 'block');
+            document.body.classList.toggle('banner-modal-open', visible);
+          };
+          const observer = new MutationObserver(updateBannerVisibility);
+          modals.forEach(modal => observer.observe(modal, { attributes: true, attributeFilter: ['class', 'style'] }));
+          updateBannerVisibility();
+        });
 
         function stopStatusInfoUpdates() {
           if (statusInfoInterval) {

@@ -269,6 +269,9 @@
         var score_index = 0;
         var windowHeight = window.innerHeight;
         const scores = [];
+        // This attempt stays in page memory until Save, including sequence-2 reloads.
+        const seq_start = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+        const seq_time_trusted = /*[[${clockTrusted}]]*/ false;
         const numOfManeuvers = /*[[${numOfManeuvers}]]*/ ;
         const round =  /*[[${activeRound}]]*/ ;
         const sequence =  /*[[${activeSequence}]]*/ ;
@@ -858,7 +861,10 @@
                 round: round,
                 sequence: sequence,
                 type: roundType,
-                scores: scores
+                scores: scores,
+                seq_start: seq_start,
+                seq_end: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+                seq_time_trusted: seq_time_trusted
             }
             scoreSubmissionPending = true;
             $.ajax({

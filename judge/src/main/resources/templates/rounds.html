@@ -75,8 +75,8 @@
             <td class="light data"><span th:text="${round.round_num}">round_num</span></td>
             <td class="light data"><span th:text="${round.sequences}">sequences</span></td>
             <td class="light data"><span th:text="${round.sched_desc}">sched_desc</span></td>
-            <td class="light data"><span th:text="${round.started_at ?: '-'}">started_at</span></td>
-            <td class="light data"><span th:text="${round.closed_at ?: '-'}">closed_at</span></td>
+            <td class="light data"><span th:text="${round.round_start ?: '-'}">round_start</span></td>
+            <td class="light data"><span th:text="${round.round_end ?: '-'}">round_end</span></td>
           </tr>
           </tbody>
         </table>

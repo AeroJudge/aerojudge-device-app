@@ -11,6 +11,14 @@ import java.io.File;
 
 @SpringBootApplication
 public class JudgeApplication implements WebMvcConfigurer {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.aerojudge.judge.utils.DeviceClockWarningInterceptor clockWarningInterceptor;
+
+    @Override
+    public void addInterceptors(org.springframework.web.servlet.config.annotation.InterceptorRegistry registry) {
+        registry.addInterceptor(clockWarningInterceptor);
+    }
+
 	private static final Logger logger =
 			LoggerFactory.getLogger(JudgeApplication.class);
 
