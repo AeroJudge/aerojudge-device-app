@@ -51,6 +51,33 @@ public class RootController {
     @Autowired
     private SequenceFolderResolver sequenceFolderResolver;
 
+    @Autowired
+    private DeviceClockService deviceClockService;
+
+    @org.springframework.web.bind.annotation.ModelAttribute
+    public void clockModel(Model model) {
+        model.addAttribute("clockState", deviceClockService.getState().name());
+        model.addAttribute("clockTrusted", deviceClockService.isTrusted());
+    }
+
+    @GetMapping("/device-time-warning")
+    public String deviceTimeWarning() {
+        return deviceClockService.isBootWarningPending() ? "device-time-warning" : "redirect:/";
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/device-time-warning/dismiss")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public java.util.Map<String, Boolean> dismissDeviceTimeWarning() {
+        deviceClockService.dismissBootWarning();
+        return java.util.Map.of("success", true);
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/device-time-warning/resync")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public DeviceClockService.ClockSyncResult resyncDeviceTime() {
+        return deviceClockService.resyncFromScore();
+    }
+
     @GetMapping("/")
     public String home(Model model)
             throws IOException, ParserConfigurationException, SAXException, UnirestException {

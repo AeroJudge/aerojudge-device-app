@@ -26,6 +26,8 @@
 hs_err_pid*
 
 ### Maven / build output ###
+# Test files are local-only under .idea/testfiles/.
+judge/src/test/
 judge/target/
 !judge/.mvn/wrapper/maven-wrapper.jar
 !judge/**/src/main/**/target/

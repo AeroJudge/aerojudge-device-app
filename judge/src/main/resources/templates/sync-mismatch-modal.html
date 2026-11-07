@@ -3,20 +3,20 @@
 
 <body>
   <div th:fragment="modal">
-    <div id="syncMismatchModal" class="modal" style="max-width: 600px;">
-      <div class="modal-content" style="padding: 16px 20px;">
-        <h5 style="font-size: 1.75rem; margin-top: 0;">
-          <i class="material-icons orange-text" style="font-size: 1.5rem; vertical-align: middle; margin-right: 6px;">warning</i>
+    <div id="syncMismatchModal" class="modal device-modal device-modal--standard">
+      <div class="modal-content">
+        <h5>
+          <i class="material-icons orange-text">warning</i>
           Mismatches detected — admin review recommended before sync.
         </h5>
-        <ul id="syncMismatchList" style="font-size: 1.75rem; margin: 12px 0; padding-left: 24px; list-style: disc;"></ul>
-        <p style="font-size: 1.5rem; color: #555; margin: 12px 0 0;">
+        <ul id="syncMismatchList"></ul>
+        <p style="color: #555" class="device-modal__secondary">
           Continuing will push uneven data to the score server. Some mistakes can't be detected automatically — when in doubt, get admin before syncing.
         </p>
       </div>
-      <div class="modal-footer" style="padding: 10px 20px;">
-        <a href="#!" class="modal-close waves-effect btn-flat" style="font-size: 1.5rem;">Get admin</a>
-        <a href="#!" id="syncAnywayBtn" class="modal-close waves-effect btn-flat" style="font-size: 1.5rem;">Sync anyway</a>
+      <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect btn-flat">Get admin</a>
+        <a href="#!" id="syncAnywayBtn" class="modal-close waves-effect btn-flat">Sync anyway</a>
       </div>
     </div>
   </div>

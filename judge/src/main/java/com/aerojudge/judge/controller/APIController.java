@@ -62,8 +62,8 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 @RestController
 public class APIController {
     private static final Logger logger = LoggerFactory.getLogger(RootController.class);
-    private static final String RELEASE_VERSION_PATTERN = "^[0-9]{2}\\.[0-9]+\\.[0-9]+$";
-    private static final String RELEASE_TAG_PATTERN = "^v[0-9]{2}\\.[0-9]+\\.[0-9]+$";
+    private static final String RELEASE_VERSION_PATTERN = "^[0-9]{2}\\.[0-9]+(\\.[0-9]+)?$";
+    private static final String RELEASE_TAG_PATTERN = "^v[0-9]{2}\\.[0-9]+(\\.[0-9]+)?$";
 
     @Autowired
     private CompService compService;
@@ -207,7 +207,8 @@ public class APIController {
         logger.debug(new Gson().toJson(comp));
        
         // fetch pilots
-        pilotService.getPilotsFileFromScore(); // Reloading here means we can add pilots mid comp. But if their id/name
+        pilotService.getPilotsFileFromScore(editComp ? com.aerojudge.judge.service.DeviceClockService.ClockIntent.REFRESH
+                : com.aerojudge.judge.service.DeviceClockService.ClockIntent.NEW_EVENT); // Reloading here means we can add pilots mid comp. But if their id/name
         compService.enrichCompWithCompInfoFromScore(comp); // Add the names and ID.
        
        
@@ -364,7 +365,7 @@ public class APIController {
     @GetMapping("/api/pilots/sync")
     public String syncPilots() throws IOException, ParserConfigurationException, SAXException {
         // fetch pilots
-        pilotService.getPilotsFileFromScore();
+        pilotService.getPilotsFileFromScore(com.aerojudge.judge.service.DeviceClockService.ClockIntent.REFRESH);
         sequenceService.getSequenceFileFromScore();
         // Force reload ScheduleService cache with new sequence data
         scheduleService.populateSequences();
@@ -561,9 +562,9 @@ public class APIController {
         String[] v1Parts = version1.split("\\.");
         String[] v2Parts = version2.split("\\.");
 
-        for (int i = 0; i < v1Parts.length; i++) {
-            int v1Num = Integer.parseInt(v1Parts[i]);
-            int v2Num = Integer.parseInt(v2Parts[i]);
+        for (int i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+            int v1Num = i < v1Parts.length ? Integer.parseInt(v1Parts[i]) : 0;
+            int v2Num = i < v2Parts.length ? Integer.parseInt(v2Parts[i]) : 0;
 
             if (v1Num > v2Num) {
                 return true;
@@ -657,6 +658,9 @@ public class APIController {
         List<PScore> destScoreList = new ArrayList<>(destScores.getScores());
         for (PScore score : scoresToMove) {
             PScore movedScore = new PScore(destRound, score.getSequence(), score.getScores(), score.getType());
+            movedScore.setSeq_start(score.getSeq_start());
+            movedScore.setSeq_end(score.getSeq_end());
+            movedScore.setSeq_time_trusted(score.getSeq_time_trusted());
             // Note: audit comment would need to be added to PScore if we want per-score comments
             destScoreList.add(movedScore);
         }
@@ -667,6 +671,9 @@ public class APIController {
             if (roundType.equalsIgnoreCase(score.getType()) && score.getRound() > sourceRound) {
                 // Create new score with decremented round number
                 PScore renumbered = new PScore(score.getRound() - 1, score.getSequence(), score.getScores(), score.getType());
+                renumbered.setSeq_start(score.getSeq_start());
+                renumbered.setSeq_end(score.getSeq_end());
+                renumbered.setSeq_time_trusted(score.getSeq_time_trusted());
                 remainingSourceScores.set(remainingSourceScores.indexOf(score), renumbered);
             }
         }
@@ -991,12 +998,13 @@ public class APIController {
             result.put("updateAvailable", false);
             result.put("latestVersion", null);
             result.put("latestTag", null);
-            result.put("message", "Current app version is unavailable or invalid; update checks require a packaged release version in YY.MAJOR.MINOR format.");
+            result.put("message", "Current app version is unavailable or invalid; update checks require a packaged release version in MAJOR.MINOR or legacy MAJOR.MINOR.PATCH format.");
             logger.warn("Version check skipped: current app version is not comparable: {}", currentVersion);
             return new ResponseEntity<>(new GsonBuilder().serializeNulls().create().toJson(result), HttpStatus.SERVICE_UNAVAILABLE);
         }
 
         try {
+            recoverClockForUpdate();
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(10))
                     .build();
@@ -1020,7 +1028,7 @@ public class APIController {
                     result.put("updateAvailable", false);
                     result.put("latestVersion", null);
                     result.put("latestTag", latestTag);
-                    result.put("message", "Latest release tag is unavailable or invalid; expected vYY.MAJOR.MINOR format.");
+                    result.put("message", "Latest release tag is unavailable or invalid; expected vMAJOR.MINOR or legacy vMAJOR.MINOR.PATCH format.");
                     logger.warn("Version check skipped: latest release tag is not comparable: {}", latestTag);
                     return new ResponseEntity<>(new GsonBuilder().serializeNulls().create().toJson(result), HttpStatus.SERVICE_UNAVAILABLE);
                 }
@@ -1101,6 +1109,24 @@ public class APIController {
             result.put("result", "fail");
             result.put("message", "Update failed: " + e.getMessage());
             return new ResponseEntity<>(new Gson().toJson(result), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Recovery diagnostics go directly to the service journal. Never read to EOF
+    // before the bounded wait, and never interpret temporary time as RTC trust.
+    private void recoverClockForUpdate() {
+        try {
+            Process recovery = new ProcessBuilder("/home/judge/fetch_update.sh", "--recover-clock")
+                    .directory(new File("/home/judge")).inheritIO().start();
+            if (!recovery.waitFor(25, java.util.concurrent.TimeUnit.SECONDS)) {
+                logger.warn("Update clock recovery exceeded its 25-second wait; continuing to GitHub.");
+            } else if (recovery.exitValue() != 0) {
+                logger.warn("Update clock recovery exited {}; continuing to GitHub.", recovery.exitValue());
+            }
+        } catch (InterruptedException e) {
+            logger.warn("Update clock recovery wait interrupted; continuing to GitHub.");
+        } catch (IOException e) {
+            logger.warn("Update clock recovery could not run; continuing to GitHub: {}", e.getMessage());
         }
     }
 

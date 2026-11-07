@@ -8,7 +8,12 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
-*PR Pending*
+
+- Add device clock status and recovery, with timestamps for rounds and judged sequences.
+- Clean up modal and popover styling, keeping pilot-start controls visible with battery warnings.
+- Accept two-part app release versions while retaining existing three-part versions.
+
+*PR #27*
 - Added a shared browser gesture policy using horizontal overscroll suppression
   to prevent swipe navigation from bypassing intended kiosk workflows. Resolves issue #22.
 

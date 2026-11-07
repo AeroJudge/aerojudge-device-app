@@ -71,12 +71,31 @@ public class PilotService {
     @Autowired
     private SettingService settingService;
 
-    public void getPilotsFileFromScore() throws MalformedURLException, IOException {
+    @Autowired
+    private DeviceClockService deviceClockService;
+
+    public void getPilotsFileFromScore() throws IOException {
+        getPilotsFileFromScore(DeviceClockService.ClockIntent.NONE);
+    }
+
+    public void getPilotsFileFromScore(DeviceClockService.ClockIntent intent) throws IOException {
         SettingDTO settingDTO = settingService.getSettings();
         int timeout = (int)Duration.ofSeconds(settingDTO.getScore_timeout()).toMillis();
         PILOT_DAT_URL = PILOT_DAT_URL.replace("SCORE_HOST", settingDTO.getScore_host()).replace("SCORE_HTTP_PORT", String.valueOf(settingDTO.getScore_http_port()));
         // Updated deprecated URL, changed new URL(x) to URI.create(x).toURL() 2025-11 DPG
-        FileUtils.copyURLToFile(URI.create(PILOT_DAT_URL).toURL(), new File(PILOT_DAT_PATH),timeout,timeout);
+        var connection = (java.net.HttpURLConnection) URI.create(PILOT_DAT_URL).toURL().openConnection();
+        connection.setConnectTimeout(timeout);
+        connection.setReadTimeout(timeout);
+        try (var body = connection.getInputStream()) {
+            if (intent != DeviceClockService.ClockIntent.NONE) {
+                // Reuse this successful response before copying its body. Clock failure
+                // must not turn a successful roster download into an event-data failure.
+                String date = connection.getHeaderField("Date");
+                try { deviceClockService.applyScoreDate(date, intent); }
+                catch (RuntimeException e) { logger.warn("Could not apply Score time", e); }
+            }
+            FileUtils.copyInputStreamToFile(body, new File(PILOT_DAT_PATH));
+        } finally { connection.disconnect(); }
     }
 
     public boolean isPilots(){
@@ -310,6 +329,9 @@ public class PilotService {
         Pilot pilot = getPilot(pilotScoreDTO.getPrimary_id());
         PilotScores pilotScores = getPilotScores(pilot);
         PScore newScore = new PScore(pilotScoreDTO.getRound(), pilotScoreDTO.getSequence(), pilotScoreDTO.getScores(),pilotScoreDTO.getType().toUpperCase());
+        newScore.setSeq_start(pilotScoreDTO.getSeq_start());
+        newScore.setSeq_end(pilotScoreDTO.getSeq_end());
+        newScore.setSeq_time_trusted(pilotScoreDTO.getSeq_time_trusted());
         if (isNewScore(pilotScores, newScore)) {
             List<PScore> currentScores = pilotScores.getScores();
             currentScores.add(newScore);

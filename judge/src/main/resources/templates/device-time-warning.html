@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Device Time</title>
+  <link rel="stylesheet" href="/materialize/css/materialize.min.css">
+  <link href="/device-modal.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/device-gesture.css">
+  <style>
+    body { margin: 0; background: #f5f5f5; color: #212121; }
+    #clockResult:empty { display: none; }
+  </style>
+</head>
+<body>
+  <div id="clockWarning" class="modal device-modal device-modal--standard">
+    <div class="modal-content">
+      <h1 id="clockWarningTitle">Device time cannot be trusted</h1>
+      <p id="clockInstructions">Resync with Score to establish device time, or dismiss to continue judging.</p>
+      <p id="clockResult" role="status" aria-live="polite"></p>
+      <div id="clockProgress" class="progress" style="display:none"><div class="indeterminate"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button id="clockDismiss" class="btn-large grey lighten-3 black-text">Dismiss</button>
+      <button id="clockResync" class="btn-large green darken-3">Resync Clock</button>
+      <a id="clockContinue" href="/" class="btn-large green darken-3" style="display:none">Continue</a>
+    </div>
+  </div>
+  <script src="/jquery-3.6.4.min.js"></script>
+  <script src="/materialize/js/materialize.js"></script>
+  <script>
+    M.Modal.init(document.getElementById('clockWarning'), { dismissible: false }).open();
+    let clockBusy = false;
+    function setClockBusy(busy) {
+      clockBusy = busy;
+      $('#clockDismiss, #clockResync').prop('disabled', busy);
+      $('#clockProgress').toggle(busy);
+    }
+    $('#clockResync').on('click', function () {
+      if (clockBusy) return;
+      setClockBusy(true);
+      $('#clockResult').text('Synchronizing with Score...');
+      // Score's configured timeout and the helper wait govern this request.
+      $.ajax({ type: 'POST', url: '/device-time-warning/resync', dataType: 'json',
+        success: function (result) {
+          $('#clockResult').text(result.message);
+          if (result.success) {
+            $('#clockWarningTitle').text('Device time synchronized successfully');
+            $('#clockInstructions').hide();
+            $('#clockResult').text('Device time is now trusted.');
+            $('#clockDismiss, #clockResync').hide();
+            $('#clockContinue').show();
+            setTimeout(function () { window.location.replace('/'); }, 5000);
+          } else { $('#clockResync').text('Retry'); }
+        },
+        error: function () {
+          $('#clockResult').text('Clock synchronization failed: could not complete the request.');
+          $('#clockResync').text('Retry');
+        },
+        complete: function () { setClockBusy(false); }
+      });
+    });
+    $('#clockDismiss').on('click', function () {
+      if (clockBusy) return;
+      setClockBusy(true);
+      $.ajax({ type: 'POST', url: '/device-time-warning/dismiss',
+        success: function () { window.location.replace('/'); },
+        error: function () {
+          $('#clockResult').text('Could not dismiss the warning. Please try again.');
+          setClockBusy(false);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

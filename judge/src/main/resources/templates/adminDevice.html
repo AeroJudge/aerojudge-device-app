@@ -9,6 +9,7 @@
   <!-- CSS  -->
   <link href="/materialize/css/material_lcons.css" rel="stylesheet">
   <link href="/materialize/css/materialize.min.css" type="text/css" rel="stylesheet" media="screen,projection" />
+  <link href="/device-modal.css" rel="stylesheet" />
   <link href="/device-gesture.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <link href="/device-toast.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <style>
@@ -17,7 +18,7 @@
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      margin: 10px 0 6px 0;
+      margin: 20px 0 6px 0;
     }
     .heading {
       font-size: calc(1.5vw + 2.5vh) !important;
@@ -232,32 +233,32 @@
       </div>
 
       <!-- Confirmation Modal for Device Identity -->
-      <div id="confirmDeviceModal" class="modal">
-        <div class="modal-content" style="padding: 15px 20px 10px;">
-          <h5 style="margin-top: 0; font-size: 1.9rem;"><i class="material-icons red-text" style="vertical-align: middle; margin-right: 8px; font-size: 1.5rem;">warning</i>Change Device Identity?</h5>
-          <p style="font-size: 1.75rem; color: #666; margin: 10px 0;">
+      <div id="confirmDeviceModal" class="modal device-modal device-modal--standard">
+        <div class="modal-content">
+          <h5><i class="material-icons red-text">warning</i>Change Device Identity?</h5>
+          <p style="color: #666" class="device-modal__secondary">
             This will save new Line/Judge numbers, connect to Score, archive current scores, and load fresh event data.
           </p>
         </div>
-        <div class="modal-footer" style="padding: 10px 20px;">
+        <div class="modal-footer">
           <a href="#!" class="modal-close waves-effect waves-red btn-flat">Cancel</a>
           <a href="#!" id="confirmDeviceBtn" class="waves-effect waves-light btn red">Yes, Save & Load</a>
         </div>
       </div>
 
       <!-- Confirmation Modal for System Update -->
-      <div id="confirmUpdateModal" class="modal">
-        <div class="modal-content" style="padding: 15px 20px 10px;">
-          <h5 style="margin-top: 0; font-size: 1.9rem;"><i class="material-icons blue-text" style="vertical-align: middle; margin-right: 8px; font-size: 1.5rem;">cloud_download</i>Install Update?</h5>
-          <p id="updateVersionInfo" style="font-size: 1.5rem; margin: 10px 0;">
+      <div id="confirmUpdateModal" class="modal device-modal device-modal--standard">
+        <div class="modal-content">
+          <h5><i class="material-icons blue-text">cloud_download</i>Install Update?</h5>
+          <p id="updateVersionInfo" class="device-modal__secondary">
             <!-- Populated dynamically with version comparison -->
           </p>
-          <p style="font-size: 1.5rem; color: #666; margin: 5px 0;">
-            <i class="material-icons tiny orange-text" style="vertical-align: middle;">warning</i>
+          <p style="color: #666" class="device-modal__secondary">
+            <i class="material-icons tiny orange-text">warning</i>
             You must be connected to the internet. The device will restart after updating.
           </p>
         </div>
-        <div class="modal-footer" style="padding: 10px 20px;">
+        <div class="modal-footer">
           <a href="#!" class="modal-close waves-effect waves-red btn-flat">Cancel</a>
           <a href="#!" id="confirmUpdateBtn" class="waves-effect waves-light btn blue">Yes, Install Update</a>
         </div>
@@ -509,7 +510,7 @@
         type: "GET",
         url: "/api/system/check-update",
         dataType: "json",
-        timeout: 30000,
+        timeout: 45000,
         success: function(data) {
           $('#updateProgress').hide();
           $('#runUpdate').removeClass('disabled');

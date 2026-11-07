@@ -1,12 +1,14 @@
 # AeroJudge Device App UI Design Reference
 
-Snapshot date: 2026-08-06 06:59:53 -04:00
+Original admin-scale snapshot: 2026-08-06 06:59:53 -04:00
 
-Code snapshot: `74bad1609fd97c69b836615712ca99abe19ac322`
+Banner, modal and popover standards updated: 2026-11-07 (approved UI cleanup).
+
+Original admin-scale code snapshot: `74bad1609fd97c69b836615712ca99abe19ac322`
 
 Shared text-size and spacing scale for all admin pages. Locked in 2026-05-01 during the post-resolver-overhaul cleanup. Apply these values to any new admin page so the project stays consistent.
 
-**Scope:** admin templates only - `admin.html` (landing menu), `adminComp.html` (Event Admin), `adminDevice.html` (Device Settings), `adminScores.html` (Score Fixes), `adminScoresResolve.html`, `adminScoresZeroFill.html`, `adminScoresSwap.html`. Judge screens (`/judge`, `pilot-list-*.html`, `judge_start_select.html`) are not part of this scale and have their own conventions.
+**Admin-scale scope:** admin templates only - `admin.html` (landing menu), `adminComp.html` (Event Admin), `adminDevice.html` (Device Settings), `adminScores.html` (Score Fixes), `adminScoresResolve.html`, `adminScoresZeroFill.html`, `adminScoresSwap.html`. Judge screens (`/judge`, `pilot-list-*.html`, `judge_start_select.html`) are not part of this page scale and have their own conventions. The shared modal standard below applies across admin and field pages, with explicit exceptions.
 
 **Admin navigation model.** `/admin` is the landing menu. Every other admin page (Event Admin / Score Fixes / Device Settings) has a single `Admin Menu` button in its header to return to the landing. No cross-links between admin pages - admin always pivots through the menu. Wizard sub-pages of Score Fixes (`adminScoresResolve.html` etc.) have a `Score Fixes` back button that returns to `/admin/scores`, not all the way to the menu.
 
@@ -46,7 +48,7 @@ Use these values for vertical margin and padding. Horizontal spacing is unconstr
 | Small | `6px` | row-to-row margin-bottom, gap between related elements, step1-buttons margin-top |
 | Medium | `8px` - `10px` | section-to-section margin-bottom, box padding (top/bottom), confirm-box margin |
 | Loose | `12px` - `16px` | result-box padding, force-edit-btn padding, between major page sections |
-| Page edges | `10px` top, `6px` bottom | header-row margins (was `20px / 8px` - pre-cleanup) |
+| Page edges | `20px` top, `6px` bottom | Admin header-row margins; includes the approved extra 10px separation from the banner |
 
 **Box padding pattern:** `padding: <vertical> <horizontal>` where vertical <= horizontal. Standard for content boxes is `10px 14px`.
 
@@ -61,7 +63,7 @@ All admin templates use the same values for these classes. If you copy a templat
 ### Layout
 
 ```css
-.header-row             { margin: 10px 0 6px 0; }
+.header-row             { margin: 20px 0 6px 0; }
 .heading                { /* viewport-scaled */ }
 .nav-buttons            { gap: 5px; }
 .admin-nav-btn          { margin: 2px; padding: 0 12px; }
@@ -198,7 +200,8 @@ Current shared values in `device-toast.css`:
 
 ## What goes where
 
-- **CSS in `<style>` block** - page-level structural and reusable styles. Default home for everything in this doc.
+- **Shared component CSS** - modal framing belongs in `judge/src/main/resources/static/device-modal.css`; include it after Materialize CSS. Toast styling remains in `device-toast.css`.
+- **CSS in `<style>` block** - page-specific structure and documented exceptions. Do not duplicate shared modal rules here.
 - **Inline `style="..."`** - only for one-off dynamic values (e.g., a hidden div that JS toggles). Avoid for styling that could be a class.
 - **JS-rendered HTML** - when JS appends DOM, prefer adding a class and styling in CSS. Only inline-style for truly per-instance values.
 
@@ -294,3 +297,188 @@ Differentiate type buttons by icon and label, not by per-type color.
 - Missing optional audio must fail quietly.
 - Wrong unflown active round recovery belongs in admin.
 - Scored wrong-round cases must not be silently cleared by a lightweight UI action.
+
+# Shared device modal standard
+
+Applies to admin and judge-facing dialogs on the Raspberry Pi 4B / Waveshare
+21973 display at **800x480**. Use the existing Materialize modal lifecycle and
+`judge/src/main/resources/static/device-modal.css`. This standard governs
+presentation; it does not authorize changes to judging or confirmation behavior.
+
+## Shell and scrolling
+
+| Property | Required value / behavior |
+|---|---|
+| Width | `92%`, maximum `740px`; 736px outer width at an 800px viewport |
+| Position | Horizontally centered; `top: 6%` (28.8px at 480px height) |
+| Height | Content-driven, maximum `90%` (432px at 480px height); no fixed empty height |
+| Box sizing | `border-box`, including the border within the width |
+| Corners | `20px` radius |
+| Ordinary border | Crisp `1px solid #424242` |
+| Content padding | `16px 20px` |
+| Overflow | Admin content may scroll vertically with `min-height: 0`; field content must fit without scrolling (Score Summary/review is the exception) |
+| Open layout | Flex column; content can shrink while footer remains reachable |
+| Footer | Automatic height, `12px 20px` padding, right-aligned actions, `10px` gap; wrap when necessary |
+
+Use direct `.modal-content` and `.modal-footer` children when there is a footer.
+Do not inherit a fixed 56px footer or introduce page-wide `.modal` overrides
+that defeat this shell. Only admin pages and Score Summary/review may scroll.
+All other pages and dialogs must fit at 800x480, with every action visible.
+Pilot start must fit in both global and RBR modes, including battery warnings.
+Use compact 36px single-line battery warnings, a 280px wind image inside its
+existing tappable selector, and reduced vertical gaps. Preserve judging-control
+sizes and the shared outer margins. Do not hide overflow to conceal controls.
+
+## Typography and controls
+
+| Element | Required treatment |
+|---|---|
+| Ordinary heading | `1.9rem`, weight `500`, line-height `1.2`, margin `0 0 12px` |
+| Primary paragraphs and lists | `1.75rem`, line-height `1.3`, margin `10px 0` |
+| Secondary text | `1.5rem`, using `device-modal__secondary` |
+| Alignment | Ordinary headings and content left aligned |
+| Heading icons | Existing meaningful icons only; `1.5rem`, vertically aligned, `8px` right margin |
+| Lists | `24px` left padding, disc markers, `6px` bottom margin per item |
+| List labels | `1.75rem`, weight `500` |
+| Footer buttons/links | Minimum `44px` high, automatic height, `10px 16px` padding, no external margin |
+| Footer button text | `1.5rem`, line-height `1.2`, authored case (`text-transform: none`) |
+
+Use `device-modal device-modal--standard` for ordinary confirmations and
+warnings. The shared heading selectors cover `h1`, `h5` and `h4.heading`;
+the existing unsaved-score `h3` explicitly matches the same heading values.
+Preserve labels, action order, IDs, JavaScript hooks and disabled/busy states.
+Do not force equal button widths or change the meaning of primary/secondary
+actions. Pre-sync mismatch choices deliberately keep equal visual weight.
+
+## Warnings and specific modal treatments
+
+| Modal / family | Treatment |
+|---|---|
+| Admin Access on pilot lists, New Round and error page | Shared ordinary shell. The caution about affecting competition setup is red; preserve existing warning icons where present. |
+| Pre-sync mismatch warning | Shared shell, scrolling list, equally styled Get admin / Sync anyway actions. |
+| Clear Active Round | Shared shell; retain red caution and orange Clear Round action. |
+| Load NEW Event / Change Device Identity | Shared shell; retain red warning icons and destructive-action colors. |
+| Cannot Change Sequence Mode | Shared shell; retain red warning icon, list labels and reachable Go to Score Fixes action. |
+| Install Update | Shared shell; retain blue update icon/action, orange caution and version comparison. |
+| Pilot start, global and RBR | `device-modal device-modal--pilot`: shared neutral shell; retain large pilot identity, wind control, type choices or locked RBR action, and task-specific typography. |
+| Class Select | Add `device-modal--selection` to standard classes. Retain yellow surface and two-column grid; `5px` cell padding, full-width cell buttons, centered Global List action and minimum 44px controls. |
+| Unsaved Scores and Home completion | Shared shell, text scale and footer; intentional `8px solid #b71c1c` border instead of the neutral border. Retain the large `5rem` warning icon, line-height `1`, `6px` bottom margin, and red title. |
+| Device-time warning | Shared ordinary shell for warning, progress, failure and success. Preserve approved wording, busy controls and recovery behavior. |
+| Score Summary | Entirely excluded. Preserve its existing geometry, content, score colors, actions and behavior; do not add shared modal classes. |
+
+Do not replace intentional colored borders with a neutral border. Nested battery
+warnings retain their orange/red borders. CLOCK/INFO popovers, toasts and inline
+workflow panels are not modals and are not restyled by this standard.
+
+## Confirmation states and timing
+
+- Unsaved Scores, its second confirmation, Finish Round and recovery states use
+  the **same width, top position, padding, text scale and footer layout**. The
+  `completion-guard` state must not switch to a different geometry. Text length
+  can change the content-driven height; it must not change the style.
+- Retain the large warning icon and red border throughout those guard states.
+- Preserve existing outside-click/Escape dismissal settings. Clock warning and
+  judging guards retain their existing explicit-action requirements.
+- Preserve callback ordering, navigation locks and duplicate-click protections.
+  A visual cleanup must not add or remove confirmation steps.
+- Keep Materialize's existing `250ms` opening/closing animations and `0.5`
+  backdrop opacity. Do not add new timing values.
+- Clock success retains Continue and the approved `5000ms` automatic return.
+  Other confirmations do not gain automatic dismissal.
+- The shared CLOCK/INFO banner stays hidden while a modal is open and through
+  its closing animation, then returns through the existing banner observer.
+
+## Verification requirements
+
+At 800x480, verify initial, confirmation, busy, failure and recovery states
+where applicable. Check long lists and wrapped labels, reachable actions,
+visible warning colors, scrolling, banner restoration and browser errors.
+Check shared fragments on each parent page, including global/RBR pilot lists
+and New Round. Preserve Summary without style leakage from shared selectors.
+
+Local browser rendering is developer validation, not physical Pi/touch proof.
+Record device checks and any remaining limits separately. Keep local fixtures
+and screenshots under ignored `.idea/testfiles/`; do not add test artifacts to Git.
+
+# Shared banner standard
+
+The shared source is `judge/src/main/resources/templates/banner.html`.
+`banner::line_judge` supplies the identity text; `banner::status` supplies
+CLOCK, INFO and their popovers. Keep styling consistent across yellow field
+pages and admin pages without adding an opaque banner background.
+
+## Identity and control geometry
+
+| Element | Required treatment |
+|---|---|
+| Identity | `Line 1 Judge 1` format; normal spaces, no pipe separator or extra spacing between Line and Judge |
+| Identity placement | Absolute right alignment, `right: 0`, `margin-right: 190px`, z-index `2` |
+| Controls | Absolute right alignment at `10px`; flex row, vertically centered, `14px` gap, z-index `1000` |
+| CLOCK and INFO boxes | Transparent fill, `2px solid currentColor` outline, `3px` corners; outline applies in every clock state and to INFO |
+| Total control height | **30px including borders**, using `box-sizing: border-box` |
+| Control text | Inherit surrounding font, weight `600`, line-height `26px`, horizontal padding `6px` |
+| INFO color | Black text and outline |
+| Admin separation | `.header-row { margin: 20px 0 6px 0; }`, an extra 10px compared with the old header spacing |
+
+The 30px banner controls are an explicitly approved compact exception to the
+usual 44px touch-target minimum. Do not enlarge the banner to accommodate its
+border. The admin spacing applies to the landing, Event Admin, Device Settings,
+Score Fixes and its Resolve/Zero Fill/Swap pages. Keep the existing page-specific
+fragment inclusion: Device Settings and New Event include status controls
+without the Line/Judge identity fragment.
+
+## Clock state presentation
+
+| State | Text and outline | Explanation |
+|---|---|---|
+| Trusted | Green `#24752a` | Device time is trusted. |
+| Untrusted | Red `#c62828` | Device time cannot be trusted. |
+| No supported clock | Gray `#bdbdbd`, CLOCK text struck through | No supported device clock is installed. |
+
+The outlined word remains the control in all states. Preserve the existing
+server-provided state and trust fields; visual changes do not add clock polling
+or new status requests. INFO continues to show its existing information and
+refresh behavior. Popover presentation and dismissal are specified below.
+
+## Visibility during modals
+
+- Hide Line/Judge, CLOCK/INFO controls and both popovers whenever any page modal
+  is open or still displaying its closing animation. This includes Summary and
+  warning/confirmation dialogs, without changing those dialogs themselves.
+- Use the existing `banner-modal-open` class and `visibility: hidden` rules;
+  the observer tracks modal class/style changes. Do not replace modal callbacks.
+- Restore the banner after all modals finish closing. Hiding is not equivalent
+  to dismissing a popover or changing INFO refresh behavior. A panel still open
+  may become visible again; CLOCK's existing five-second timeout continues.
+- Opening a popover does not hide the banner controls.
+
+Validate banner placement on both yellow field and admin backgrounds at
+800x480, including modal opening/closing and the admin navigation buttons.
+
+# Banner popover standard
+
+Approved 2026-11-07. CLOCK and INFO share the following treatment in
+`templates/banner.html`; these are popovers, not modal dialogs.
+
+| Property | Value |
+|---|---|
+| Position | Absolute, `right: 10px`, `top: 45px`, below banner controls |
+| Width | Content-sized (`max-content`), maximum `calc(100vw - 20px)`; no fixed wide panel |
+| Surface | White, text `#212121`, crisp `1px solid #424242` border |
+| Corners / padding | `8px` radius / `12px` padding |
+| Text | `1.5rem`, line-height `1.4` |
+| INFO rows | Labels left; names, values and status icons grouped right; minimum `14px` gap after labels |
+| INFO heading | App name/version right aligned, `18px` left reserve |
+| Countdown | Small raised number at top-left: `.8rem`, line-height `1`, top `5px`, left `7px` |
+
+Opening CLOCK closes INFO; opening INFO closes CLOCK. Tapping the same control
+or its open panel closes it. CLOCK closes automatically after `5000ms` from
+opening; closing it cancels that timer, so reopening gets a fresh five seconds.
+INFO has no new automatic dismissal. Its existing refresh tiers, countdown,
+request timing and error handling remain unchanged. Closing INFO uses its
+existing stop-updates path. Pilot-list navigation closes either popover.
+Existing modal visibility handling continues to hide banner popovers.
+
+A future USB status popover should use this visual treatment, mutual exclusion
+and the five-second auto-close rule. This is a design requirement only; no USB
+control or implementation is included in this work.
