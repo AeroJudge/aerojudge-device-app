@@ -62,8 +62,8 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 @RestController
 public class APIController {
     private static final Logger logger = LoggerFactory.getLogger(RootController.class);
-    private static final String RELEASE_VERSION_PATTERN = "^[0-9]{2}\\.[0-9]+\\.[0-9]+$";
-    private static final String RELEASE_TAG_PATTERN = "^v[0-9]{2}\\.[0-9]+\\.[0-9]+$";
+    private static final String RELEASE_VERSION_PATTERN = "^[0-9]{2}\\.[0-9]+(\\.[0-9]+)?$";
+    private static final String RELEASE_TAG_PATTERN = "^v[0-9]{2}\\.[0-9]+(\\.[0-9]+)?$";
 
     @Autowired
     private CompService compService;
@@ -562,9 +562,9 @@ public class APIController {
         String[] v1Parts = version1.split("\\.");
         String[] v2Parts = version2.split("\\.");
 
-        for (int i = 0; i < v1Parts.length; i++) {
-            int v1Num = Integer.parseInt(v1Parts[i]);
-            int v2Num = Integer.parseInt(v2Parts[i]);
+        for (int i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+            int v1Num = i < v1Parts.length ? Integer.parseInt(v1Parts[i]) : 0;
+            int v2Num = i < v2Parts.length ? Integer.parseInt(v2Parts[i]) : 0;
 
             if (v1Num > v2Num) {
                 return true;
@@ -998,7 +998,7 @@ public class APIController {
             result.put("updateAvailable", false);
             result.put("latestVersion", null);
             result.put("latestTag", null);
-            result.put("message", "Current app version is unavailable or invalid; update checks require a packaged release version in YY.MAJOR.MINOR format.");
+            result.put("message", "Current app version is unavailable or invalid; update checks require a packaged release version in MAJOR.MINOR or legacy MAJOR.MINOR.PATCH format.");
             logger.warn("Version check skipped: current app version is not comparable: {}", currentVersion);
             return new ResponseEntity<>(new GsonBuilder().serializeNulls().create().toJson(result), HttpStatus.SERVICE_UNAVAILABLE);
         }
@@ -1028,7 +1028,7 @@ public class APIController {
                     result.put("updateAvailable", false);
                     result.put("latestVersion", null);
                     result.put("latestTag", latestTag);
-                    result.put("message", "Latest release tag is unavailable or invalid; expected vYY.MAJOR.MINOR format.");
+                    result.put("message", "Latest release tag is unavailable or invalid; expected vMAJOR.MINOR or legacy vMAJOR.MINOR.PATCH format.");
                     logger.warn("Version check skipped: latest release tag is not comparable: {}", latestTag);
                     return new ResponseEntity<>(new GsonBuilder().serializeNulls().create().toJson(result), HttpStatus.SERVICE_UNAVAILABLE);
                 }
