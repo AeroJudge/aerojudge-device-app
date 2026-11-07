@@ -27,16 +27,6 @@
       font-size: calc(4vw + 3vh) !important;
     }
 
-    .modal {
-            border-radius: 20px !important;
-            max-height: 98% !important;
-            top: 5% !important;
-        }
-
-    .modal-content {
-            padding: 10px !important;
-    }
-
     .toastMessage {
       font-size: calc(2vw + 1vh) !important;
     }
@@ -50,6 +40,7 @@
   <!-- CSS  -->
   <link href="materialize/css/material_lcons.css" rel="stylesheet">
   <link href="materialize/css/materialize.min.css" type="text/css" rel="stylesheet" media="screen,projection" />
+  <link href="/device-modal.css" rel="stylesheet" />
   <link href="/device-gesture.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <link href="device-toast.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <script src="jquery-3.6.4.min.js"></script>
@@ -110,7 +101,7 @@
       </div>
 
       <!-- Modal Structure -->
-      <div th:id="'modal'+ ${pilot.index}" class="modal">
+      <div th:id="'modal'+ ${pilot.index}" class="modal device-modal device-modal--pilot">
           <div th:replace="~{judge_start_select::modal_select}"></div>
       </div>
     </div>
@@ -138,16 +129,15 @@
   <div th:replace="~{sync-mismatch-modal :: modal}"></div>
 
   <!-- Admin Warning Modal -->
-  <div id="admin_warning_modal" class="modal">
+  <div id="admin_warning_modal" class="modal device-modal device-modal--standard">
     <div class="modal-content center-align">
-      <h4><i class="material-icons medium orange-text">warning</i></h4>
-      <h5>Admin Access</h5>
-      <p style="font-size: 1.2rem;">This is an admin page that should only be used by the <strong>Contest Director</strong> or <strong>Scorekeeper</strong>.</p>
-      <p style="font-size: 1rem; color: #666;">Changes made here may affect the competition setup.</p>
+      <h5><i class="material-icons orange-text">warning</i>Admin Access</h5>
+      <p>This is an admin page that should only be used by the <strong>Contest Director</strong> or <strong>Scorekeeper</strong>.</p>
+      <p class="device-modal__secondary device-modal__warning">Changes made here may affect the competition setup.</p>
     </div>
-    <div class="modal-footer" style="text-align: center;">
-      <a href="/admin" class="waves-effect waves-green btn green" style="text-align: center; width: 120px; margin-right: 60px;">Continue</a>
-      <a href="#!" class="modal-close waves-effect waves-red btn red" style="text-align: center; width: 120px;">Exit</a>
+    <div class="modal-footer">
+      <a href="/admin" class="waves-effect waves-green btn green">Continue</a>
+      <a href="#!" class="modal-close waves-effect waves-red btn red">Exit</a>
     </div>
   </div>
 
@@ -229,10 +219,9 @@
           instance.close();
         }
       });
-      // Close status info popup if open
-      if (typeof stopStatusInfoUpdates === 'function') {
-        stopStatusInfoUpdates();
-        document.getElementById('statusInfo').classList.add('hidden');
+      // Close either banner popover before changing pilots
+      if (typeof closeBannerPopovers === 'function') {
+          closeBannerPopovers();
       }
     }
 

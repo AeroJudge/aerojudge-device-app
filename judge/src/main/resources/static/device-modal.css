@@ -1,0 +1,82 @@
+/* Shared modal framing. Score Summary does not opt in; warning guards retain their red border. */
+.device-modal {
+  width: 92%;
+  max-width: 740px;
+  top: 6% !important;
+  max-height: 90%;
+  box-sizing: border-box;
+  border: 1px solid #424242;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.device-modal.open {
+  display: flex !important;
+  flex-direction: column;
+}
+
+.device-modal > .modal-content {
+  padding: 16px 20px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.device-modal > .modal-footer {
+  height: auto;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.device-modal .modal-footer a,
+.device-modal .modal-footer button {
+  margin: 0;
+  min-height: 44px;
+  height: auto;
+  padding: 10px 16px;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.device-modal--standard h1,
+.device-modal--standard h5,
+.device-modal--standard h4.heading {
+  font-size: 1.9rem;
+  font-weight: 500;
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+
+.device-modal--standard p,
+.device-modal--standard ul {
+  font-size: 1.75rem;
+  line-height: 1.3;
+  margin: 10px 0;
+}
+
+.device-modal--standard .device-modal__secondary { font-size: 1.5rem; }
+.device-modal--standard .device-modal__warning { color: #c62828; }
+.device-modal--standard .center-align { text-align: left; }
+.device-modal--standard h5 .material-icons {
+  font-size: 1.5rem;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.device-modal--standard ul { padding-left: 24px; }
+.device-modal--standard li { list-style-type: disc; margin-bottom: 6px; }
+.device-modal__list-label { font-size: 1.75rem; font-weight: 500; }
+
+/* Field selection controls retain their larger, task-specific text and geometry. */
+.device-modal--pilot .btn,
+.device-modal--selection .btn { min-height: 44px; line-height: 44px; }
+.device-modal--selection .col.s6 { padding: 5px; }
+.device-modal--selection .col.s6 .btn { width: 100%; }
+.device-modal--selection .row:last-child { text-align: center; }

@@ -3,8 +3,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
   <body>
 
-    <div th:fragment="modal_select"  class="modal-content" style="padding-top: 5px; position: relative;">
+    <div th:fragment="modal_select"  class="modal-content pilot-start-content" style="position: relative;">
         <style>
+            /* Fit both pilot-start modes, including battery warnings, at 800x480. */
+            .pilot-start-content form > .row {
+                margin-bottom: 6px;
+            }
             /* Type selection buttons - clean bordered style */
             .type-btn {
                 display: flex;
@@ -65,18 +69,20 @@
                 display: none; /* Hidden by default */
                 align-items: center;
                 justify-content: center;
-                padding: 10px 20px;
+                padding: 4px 16px;
                 border-radius: 8px;
-                margin-bottom: 10px;
+                margin-bottom: 4px;
                 font-weight: 700;
                 border: 2px solid;
             }
             .battery-status i {
                 margin-right: 10px;
-                font-size: 2.2rem;
+                font-size: 24px;
+                line-height: 24px;
             }
             .battery-status .bat-text {
                 font-size: 1.3rem;
+                line-height: 24px;
                 font-weight: 700;
             }
             .battery-mid {
@@ -122,7 +128,9 @@
             }
             .dir-toggle-btn img {
                 display: block;
-                width: 100%;
+                width: 280px;
+                max-width: 100%;
+                margin: 0 auto;
                 height: auto;
             }
             .dir-toggle-btn:focus {
@@ -150,14 +158,14 @@
                 line-height: 1.15;
                 font-weight: 700;
                 text-align: center;
-                margin: 30px 0 12px;
+                margin: 8px 0 6px;
             }
         </style>
 
         <!-- Battery Warning Indicator (updated via onOpenStart callback in pilot-list pages) -->
         <div class="battery-status"></div>
 
-        <h5 th:text="${pilot.name}" style="font-size: 2.8rem; font-weight: 700; margin-bottom: 30px;">Judging Pilot</h5>
+        <h5 th:text="${pilot.name}" style="font-size: 2.8rem; font-weight: 700; margin: 4px 0 8px;">Judging Pilot</h5>
         <form th:id="'judgeknown'+${pilot.index}" action="/judge" method="get">
             <input type="hidden" name="pilot_id" th:value="${pilot.primary_id}"/>
             <input type="hidden" th:id="'roundType'+${pilot.index}" name="roundType" th:value="${activeRoundType} ?: 'KNOWN'"/>

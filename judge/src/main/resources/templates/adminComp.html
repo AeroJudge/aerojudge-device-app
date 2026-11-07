@@ -9,6 +9,7 @@
   <!-- CSS  -->
   <link href="/materialize/css/material_lcons.css" rel="stylesheet">
   <link href="/materialize/css/materialize.min.css" type="text/css" rel="stylesheet" media="screen,projection" />
+  <link href="/device-modal.css" rel="stylesheet" />
   <link href="/device-gesture.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <link href="/device-toast.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <style>
@@ -163,36 +164,36 @@
       </div>
 
       <!-- Confirmation Modal for New Event -->
-      <div id="confirmNewEventModal" class="modal">
-        <div class="modal-content" style="padding: 15px 20px 10px;">
-          <h5 style="margin-top: 0; font-size: 1.9rem;"><i class="material-icons red-text" style="vertical-align: middle; margin-right: 8px; font-size: 1.5rem;">warning</i>Load NEW Event?</h5>
-          <p style="font-size: 1.75rem; color: #666; margin: 10px 0;">
+      <div id="confirmNewEventModal" class="modal device-modal device-modal--standard">
+        <div class="modal-content">
+          <h5><i class="material-icons red-text">warning</i>Load NEW Event?</h5>
+          <p style="color: #666" class="device-modal__secondary">
             This will archive current scores, clear pilot data, and load fresh data from Score.
           </p>
         </div>
-        <div class="modal-footer" style="padding: 10px 20px;">
+        <div class="modal-footer">
           <a href="#!" class="modal-close waves-effect waves-red btn-flat">Cancel</a>
           <a href="#!" id="confirmNewEventBtn" class="waves-effect waves-light btn red">Yes, Load New</a>
         </div>
       </div>
 
       <!-- Format-change blocker modal -->
-      <div id="formatChangeBlockerModal" class="modal">
-        <div class="modal-content" style="padding: 15px 20px 10px;">
-          <h5 style="margin-top: 0; font-size: 1.9rem;"><i class="material-icons red-text" style="vertical-align: middle; margin-right: 8px; font-size: 1.5rem;">block</i>Cannot Change Sequence Mode</h5>
-          <div id="rule1FailuresWrap" style="display: none; margin-top: 10px;">
-            <div style="font-weight: 500; margin-bottom: 4px; font-size: 1.75rem;">Pilots mid-round (between sequence 1 and sequence 2):</div>
-            <ul id="rule1FailuresList" style="margin-top: 4px; padding-left: 20px; font-size: 1.75rem;"></ul>
+      <div id="formatChangeBlockerModal" class="modal device-modal device-modal--standard">
+        <div class="modal-content">
+          <h5><i class="material-icons red-text">block</i>Cannot Change Sequence Mode</h5>
+          <div id="rule1FailuresWrap" style="display: none">
+            <div class="device-modal__list-label">Pilots mid-round (between sequence 1 and sequence 2):</div>
+            <ul id="rule1FailuresList"></ul>
           </div>
-          <div id="rule2FailuresWrap" style="display: none; margin-top: 10px;">
-            <div style="font-weight: 500; margin-bottom: 4px; font-size: 1.75rem;">Classes with uneven KNOWN round counts:</div>
-            <ul id="rule2FailuresList" style="margin-top: 4px; padding-left: 20px; font-size: 1.75rem;"></ul>
+          <div id="rule2FailuresWrap" style="display: none">
+            <div class="device-modal__list-label">Classes with uneven KNOWN round counts:</div>
+            <ul id="rule2FailuresList"></ul>
           </div>
-          <p style="font-size: 1.5rem; color: #444; margin: 12px 0 4px;">
+          <p style="color: #444" class="device-modal__secondary">
             Resolve them in Score Fixes first.
           </p>
         </div>
-        <div class="modal-footer" style="padding: 10px 20px;">
+        <div class="modal-footer">
           <a href="/admin/scores" class="waves-effect waves-light btn">Go to Score Fixes</a>
         </div>
       </div>

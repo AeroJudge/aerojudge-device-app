@@ -36,8 +36,10 @@
 
         .stscounter {
           font-size: 0.8rem;
-          margin-left: 5px;
-          float: left;
+          position: absolute;
+          top: 5px;
+          left: 7px;
+          line-height: 1;
         }
 
         .info-icon {
@@ -46,18 +48,34 @@
           background: transparent;
         }
 
-        .status-info {
+        .banner-popover {
           position:absolute;
-          right: 50px;
-          text-align: right;
-          padding: 5px;
-          border: #aaa 1px solid;
-          border-radius: 24px;
+          right: 10px;
+          top: 45px;
+          width: max-content;
+          max-width: calc(100vw - 20px);
+          box-sizing: border-box;
+          background: #fff;
+          color: #212121;
+          font-size: 1.5rem;
+          line-height: 1.4;
+          text-align: left;
+          overflow-wrap: anywhere;
+          padding: 12px;
+          border: #424242 1px solid;
+          border-radius: 8px;
+          cursor: pointer;
           -webkit-box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
           box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
           opacity: 1;
           z-index: 1000; /* ensure it sits above other content */
         }
+        .status-info-header { padding-left: 18px; margin-bottom: 2px; text-align: right; }
+        .status-info-row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; }
+        .status-info-row > .label { flex-shrink: 0; }
+        .status-info-value { min-width: 0; text-align: right; }
+        .status-info-value .info-icon,
+        .status-info-value .battery-icon { margin-left: 6px; vertical-align: middle; }
         
         .wifi-icon {
           width: 20px;
@@ -119,21 +137,20 @@
         .banner-modal-open .clock-info-controls,
         .banner-modal-open #clockExplanation,
         .banner-modal-open #statusInfo { visibility:hidden; }
-        #clockExplanation { position:absolute; right:10px; top:40px; max-width:360px; padding:10px 14px; background:#eee; color:#212121; border:1px solid #aaa; border-radius:4px; z-index:1001; font-size:1.2rem; cursor:pointer; }
       </style>
       <div class="clock-info-controls">
         <button type="button" id="clockIndicator"
                 th:class="${clockState == 'NONE'} ? 'clock-none' : (${clockTrusted} ? 'clock-trusted' : 'clock-untrusted')"
-                onclick="document.getElementById('clockExplanation').classList.toggle('hidden');">CLOCK</button>
+                onclick="toggleClockExplanation();">CLOCK</button>
         <button type="button" style="color:black" onclick="toggleStatus();">INFO</button>
       </div>
-      <button type="button" id="clockExplanation" class="hidden" onclick="this.classList.add('hidden');"
+      <button type="button" id="clockExplanation" class="banner-popover hidden" onclick="closeClockExplanation();"
               th:text="${clockState == 'NONE'} ? 'No supported device clock is installed.' : (${clockTrusted} ? 'Device time is trusted.' : 'Device time cannot be trusted.')"></button>
 
-      <div id="statusInfo" class="status-info right grey lighten-3 hidden" onclick="toggleStatus();">
+      <div id="statusInfo" class="status-info banner-popover hidden" onclick="toggleStatus();">
         <span id="stsmsg">Please wait...</span>
         <span id="stsctr" class="stscounter hidden">10</span>
-        <span id="appName"></span> <span id="appVersion"></span><br/>
+        <div class="status-info-header"><span id="appName"></span> <span id="appVersion"></span></div>
         <div id="dynamicLines"></div>
         <svg id="wifiIcon" class="wifi-icon" style="display:none;" viewBox="0 0 64 64">
           <!-- Bars (all grey when disconnected) -->
@@ -168,6 +185,29 @@
 
       <script>
         let statusInfoInterval = null;
+        let clockExplanationTimeout = null;
+
+        function closeClockExplanation() {
+          clearTimeout(clockExplanationTimeout);
+          clockExplanationTimeout = null;
+          document.getElementById('clockExplanation').classList.add('hidden');
+        }
+
+        function toggleClockExplanation() {
+          const opening = document.getElementById('clockExplanation').classList.contains('hidden');
+          closeClockExplanation();
+          if (!opening) return;
+          // Use INFO's existing close path without changing its refresh behavior.
+          if (!document.getElementById('statusInfo').classList.contains('hidden')) toggleStatus();
+          document.getElementById('clockExplanation').classList.remove('hidden');
+          clockExplanationTimeout = setTimeout(closeClockExplanation, 5000);
+        }
+
+        function closeBannerPopovers() {
+          closeClockExplanation();
+          stopStatusInfoUpdates();
+          document.getElementById('statusInfo').classList.add('hidden');
+        }
 
         document.addEventListener('DOMContentLoaded', function () {
           const modals = Array.from(document.querySelectorAll('.modal'));
@@ -212,6 +252,7 @@
 
         // toggle status info visibility on click
         function toggleStatus() {
+          closeClockExplanation();
           const statusInfo = document.getElementById("statusInfo");
           statusInfo.classList.toggle("hidden");
 
@@ -295,11 +336,14 @@
               container.innerHTML = '';
               lines.forEach(line => {
                 const div = document.createElement('div');
+                div.className = 'status-info-row';
                 div.innerHTML = `
                   <span class="label">${line.label}</span>
+                  <span class="status-info-value">
                   ${line.name ? `<span class="name">${line.name}</span>` : ''}
                   <span class="value">${line.value}</span>
                   ${line.icon ? `<i id="infoIcon" class="material-icons info-icon">${line.icon}</i>` : ''}
+                  </span>
                 `;
                 container.appendChild(div);
 
@@ -308,7 +352,7 @@
                   const svg = document.getElementById('wifiIcon').cloneNode(true);
                   svg.style.display = 'inline-block';
                   svg.removeAttribute('id'); // Remove id to avoid duplicates
-                  div.appendChild(svg);
+                  div.querySelector('.status-info-value').appendChild(svg);
 
                   const strength = line.value.replace('%', '');
                   updateWifiIcon(strength ? parseInt(strength) : 0);
@@ -317,7 +361,7 @@
                   const svg = document.getElementById('batteryIcon').cloneNode(true);
                   svg.style.display = 'inline-block';
                   svg.removeAttribute('id'); // Remove id to avoid duplicates
-                  div.appendChild(svg);
+                  div.querySelector('.status-info-value').appendChild(svg);
 
                   const strength = line.value.replace('%', '');
                   updateBatteryIcon(strength ? parseInt(strength) : 0);

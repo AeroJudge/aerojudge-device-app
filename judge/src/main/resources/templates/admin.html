@@ -9,6 +9,7 @@
   <!-- CSS  -->
   <link href="/materialize/css/material_lcons.css" rel="stylesheet">
   <link href="/materialize/css/materialize.min.css" type="text/css" rel="stylesheet" media="screen,projection" />
+  <link href="/device-modal.css" rel="stylesheet" />
   <link href="/device-gesture.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <link href="/device-toast.css" type="text/css" rel="stylesheet" media="screen,projection" />
   <style>
@@ -127,17 +128,17 @@
     </div>
   </div>
 
-  <div id="clearActiveRoundModal" class="modal" th:if="${activeRoundCanClear}">
+  <div id="clearActiveRoundModal" class="modal device-modal device-modal--standard" th:if="${activeRoundCanClear}">
     <div class="modal-content">
       <h5>Clear Active Round?</h5>
-      <p style="font-size: 1.2rem;">
+      <p>
         This is only for a mistaken round start before any pilot has flown or been scored.
       </p>
-      <p style="font-size: 1.2rem; color: #c62828;">
+      <p style="color: #c62828" class="device-modal__secondary">
         If any scores exist, this action will be blocked.
       </p>
     </div>
-    <div class="modal-footer" style="text-align: center;">
+    <div class="modal-footer">
       <a href="#!" class="modal-close waves-effect waves-red btn-flat">Cancel</a>
       <a href="#!" id="confirmClearActiveRound" class="waves-effect waves-light btn orange darken-2">Clear Round</a>
     </div>
