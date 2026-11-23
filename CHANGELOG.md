@@ -8,6 +8,7 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
+- Allow a first-pilot Known sequence-mode correction in an active By Round round while preserving the saved sequence 1 and adjusting that pilot's next sequence.
 
 - Add device clock status and recovery, with timestamps for rounds and judged sequences.
 - Clean up modal and popover styling, keeping pilot-start controls visible with battery warnings.

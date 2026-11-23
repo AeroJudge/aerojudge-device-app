@@ -3,6 +3,8 @@ package com.aerojudge.judge.service;
 import com.aerojudge.judge.dto.PScore;
 import com.aerojudge.judge.dto.Pilot;
 import com.aerojudge.judge.dto.PilotScores;
+import com.aerojudge.judge.dto.CompDTO;
+import com.aerojudge.judge.dto.RoundDTO;
 import com.aerojudge.judge.utils.ContestClasses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -160,10 +162,66 @@ public class ScoreResolverService {
         Map<String, Object> payload = new HashMap<>();
         payload.put("result", "fail");
         payload.put("blocker", "format_change_unsafe");
-        payload.put("message", "Cannot change to single-sequence — data is not in a clean state");
+        payload.put("message", "Cannot change sequence mode — data is not in a clean state");
         payload.put("rule1Failures", rule1Failures);
         payload.put("rule2Failures", rule2Failures);
         return payload;
+    }
+
+    /** The first pilot's saved sequence 1 is the only eligible format-change exception. */
+    public PilotScores findFirstPilotSequenceModeRecovery(
+            CompDTO currentComp, RoundDTO activeRound, int requestedSequences)
+            throws IOException, ParserConfigurationException, SAXException {
+        if (currentComp == null || !"byRound".equalsIgnoreCase(currentComp.getScore_mode())
+                || !((currentComp.getSequences() == 1 && requestedSequences == 2)
+                || (currentComp.getSequences() == 2 && requestedSequences == 1))
+                || activeRound == null || !"KNOWN".equalsIgnoreCase(activeRound.getType())
+                || activeRound.getComp_class() == null || activeRound.getRound_num() == null) {
+            return null;
+        }
+
+        int round = activeRound.getRound_num();
+        String roundClass = activeRound.getComp_class();
+        Map<String, Integer> classCount = new HashMap<>();
+        Map<String, Integer> classBaseCount = new HashMap<>();
+        PilotScores candidate = null;
+        int peers = 0;
+
+        for (Pilot pilot : pilotService.getLocalActivePilots()) {
+            PilotScores scores = pilotService.getLocalPilotScores(pilot);
+            if (scores == null) return null;
+            String pilotClass = pilot.getClassString().toUpperCase();
+            int count = countRoundsForType(scores, "KNOWN");
+            boolean inRoundClass = roundClass.equalsIgnoreCase(pilotClass);
+            int sequence = scores.getActiveSequence("KNOWN");
+
+            if (inRoundClass && scores.getScores().stream().anyMatch(s ->
+                    "KNOWN".equalsIgnoreCase(s.getType()) && s.getRound() >= round)) {
+                long savedFirst = scores.getScores().stream().filter(s ->
+                        "KNOWN".equalsIgnoreCase(s.getType()) && s.getRound() == round
+                                && s.getSequence() == 1).count();
+                boolean later = scores.getScores().stream().anyMatch(s ->
+                        "KNOWN".equalsIgnoreCase(s.getType()) &&
+                                (s.getRound() > round || s.getSequence() != 1 && s.getRound() == round));
+                int expectedRound = requestedSequences == 2 ? round + 1 : round;
+                int expectedSequence = requestedSequences == 2 ? 1 : 2;
+                if (candidate != null || savedFirst != 1 || later
+                        || scores.getActiveRound("KNOWN") != expectedRound
+                        || sequence != expectedSequence) return null;
+                candidate = scores;
+            } else {
+                if (sequence == 2 || (inRoundClass && scores.getActiveRound("KNOWN") != round)) return null;
+                if (inRoundClass) peers++;
+            }
+
+            if (!inRoundClass && sequence == 2) return null;
+            Integer prior = classBaseCount.putIfAbsent(pilotClass, inRoundClass && candidate == scores ? count - 1 : count);
+            int comparableCount = inRoundClass && candidate == scores ? count - 1 : count;
+            if (prior != null && prior != comparableCount) return null;
+            classCount.merge(pilotClass, 1, Integer::sum);
+        }
+        return candidate != null && peers >= 1 && classCount.getOrDefault(roundClass.toUpperCase(), 0) >= 2
+                ? candidate : null;
     }
 
     /**

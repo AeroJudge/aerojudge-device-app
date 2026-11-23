@@ -132,10 +132,19 @@ public class APIController {
             return new ResponseEntity<>(new Gson().toJson(result), HttpStatus.BAD_REQUEST);
         }
 
+        PilotScores recovery = null;
+        int recoveryRound = 0;
+
         if (comp.getSequences() > 0 && currentComp.getSequences() != comp.getSequences()) {
             Map<String, Object> blockPayload = scoreResolverService.evaluateFormatChangeBlock();
             if (blockPayload != null) {
-                return new ResponseEntity<>(new Gson().toJson(blockPayload), HttpStatus.CONFLICT);
+                RoundDTO activeRound = roundsService.getScoringRound();
+                recovery = scoreResolverService.findFirstPilotSequenceModeRecovery(currentComp, activeRound, comp.getSequences());
+                if (recovery == null || comp.getScore_mode() != null
+                        && !"byRound".equalsIgnoreCase(comp.getScore_mode())) {
+                    return new ResponseEntity<>(new Gson().toJson(blockPayload), HttpStatus.CONFLICT);
+                }
+                recoveryRound = activeRound.getRound_num();
             }
         }
 
@@ -170,15 +179,59 @@ public class APIController {
         }
 
         // Save locally without Score contact
-        if (compService.saveCompToFileLocal()) {
+        boolean saved;
+        try {
+            saved = compService.saveCompToFileLocal();
+        } catch (IOException e) {
+            if (recovery != null) return recoveryWriteFailure(recovery, recoveryRound, comp.getSequences(), e);
+            throw e;
+        }
+        if (saved) {
+            if (recovery != null) {
+                try {
+                    applyFirstPilotSequenceModeRecovery(recovery, recoveryRound, comp.getSequences());
+                } catch (IOException e) {
+                    return recoveryWriteFailure(recovery, recoveryRound, comp.getSequences(), e);
+                }
+            }
             result.put("result", "ok");
-            result.put("message", "Local settings updated.");
+            result.put("message", recovery == null ? "Local settings updated."
+                    : recoverySuccessMessage(recovery, recoveryRound, comp.getSequences()));
             return new ResponseEntity<>(new Gson().toJson(result), HttpStatus.OK);
         } else {
             result.put("result", "fail");
-            result.put("message", "Could not save settings.");
+            result.put("message", recovery == null ? "Could not save settings."
+                    : "Sequence-mode correction could not be saved. Stop judging and contact the Contest Director or Scorekeeper.");
             return new ResponseEntity<>(new Gson().toJson(result), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private void applyFirstPilotSequenceModeRecovery(PilotScores scores, int roundNum, int requestedSequences)
+            throws IOException {
+        int oldRound = scores.getActiveRound("KNOWN");
+        int oldSequence = scores.getActiveSequence("KNOWN");
+        scores.setActiveRound("KNOWN", requestedSequences == 2 ? roundNum : roundNum + 1);
+        scores.setActiveSequence("KNOWN", requestedSequences == 2 ? 2 : 1);
+        pilotService.savePilotScoresToFile(scores);
+        logger.info("Corrected first pilot {} ({}) Known progression from {}/{} to {}/{}",
+                scores.getPrimary_id(), scores.get_class(), oldRound, oldSequence,
+                scores.getActiveRound("KNOWN"), scores.getActiveSequence("KNOWN"));
+    }
+
+    private String recoverySuccessMessage(PilotScores scores, int roundNum, int requestedSequences) {
+        return requestedSequences == 2
+                ? "Double sequences enabled. " + scores.getName() + " can continue round " + roundNum + " sequence 2."
+                : "Single sequences enabled. " + scores.getName() + " has completed round " + roundNum + ".";
+    }
+
+    private ResponseEntity<String> recoveryWriteFailure(PilotScores scores, int roundNum,
+            int requestedSequences, IOException error) {
+        logger.error("First-pilot sequence-mode correction failed for pilot {} round {} requested sequences {}",
+                scores.getPrimary_id(), roundNum, requestedSequences, error);
+        Map<String, Object> result = new HashMap<>();
+        result.put("result", "fail");
+        result.put("message", "Sequence-mode correction could not be saved completely. Stop judging and contact the Contest Director or Scorekeeper. Do not retry.");
+        return new ResponseEntity<>(new Gson().toJson(result), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @PostMapping("/api/comp")
