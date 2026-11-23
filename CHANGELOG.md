@@ -8,6 +8,7 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
+- Remember the selected B/C flight direction between pilots after figure 1 advances, carry it into sequence 2, and reset it when a new By Round round starts.
 
 - Add device clock status and recovery, with timestamps for rounds and judged sequences.
 - Clean up modal and popover styling, keeping pilot-start controls visible with battery warnings.

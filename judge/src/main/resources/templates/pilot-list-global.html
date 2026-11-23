@@ -145,6 +145,7 @@
   <script src="materialize/js/materialize.js"></script>
   <script src="/device-carousel.js"></script>
   <script src="fab-sync-feedback.js"></script>
+  <script src="/flight-direction.js"></script>
   <script>
     var language = '[[${settings.language}]]';
     var windowHeight = window.innerHeight - 35; // reduce some for banner
@@ -193,6 +194,7 @@
       var instances = M.Modal.init(elems, {
         onOpenStart: function(modal) {
           checkBatteryForModal(modal);
+          $(modal).find('.pilot-start-content').trigger('flightdirection:restore');
         }
       });
     });

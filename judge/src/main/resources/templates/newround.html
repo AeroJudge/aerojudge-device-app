@@ -235,6 +235,7 @@
 <script src="jquery-3.6.4.min.js"></script>
 <script src="materialize/js/materialize.js"></script>
 <script src="fab-sync-feedback.js"></script>
+<script src="/flight-direction.js"></script>
 <script th:inline="javascript">
   /*<![CDATA[*/
   M.AutoInit();
@@ -317,6 +318,7 @@
       contentType: 'application/json; charset=utf-8',
       dataType: 'json',
       success: function () {
+        AeroJudgeFlightDirection.reset();
         window.location.replace('/pilot-list-round');
       },
       error: function (err) {

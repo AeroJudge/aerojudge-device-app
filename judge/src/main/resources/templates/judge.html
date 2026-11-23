@@ -226,6 +226,7 @@
     <script src="materialize/js/materialize.js"></script>
     <script src="/device-carousel.js"></script>
     <script src="device-keys.js"></script>
+    <script src="/flight-direction.js"></script>
 
     <script th:inline="javascript">
         /*<![CDATA[*/
@@ -680,7 +681,11 @@
         update_index = function () {
             var activeIndicator = this.$indicators.find('.indicator-item.active');
             i = activeIndicator.index();
+            var previousScoreIndex = score_index;
             score_index = i;
+            if (previousScoreIndex === 0 && score_index === 1) {
+                AeroJudgeFlightDirection.remember(currentDirLetter);
+            }
             console.log(score_index)
             scores[score_index] = getCurrentScore(score_index);
             updateVirtualButtons(score_index);
@@ -960,7 +965,9 @@
                     }
                 }
                 if (responseData.activeSequenceByType[roundType] > sequence) {
-                    location.reload();
+                    var nextUrl = new URL(window.location.href);
+                    nextUrl.searchParams.set('dirflip', AeroJudgeFlightDirection.read(currentDirLetter) === 'C' ? 'true' : 'false');
+                    window.location.replace(nextUrl.toString());
                 }
             } else {
                 if (scoreMode !== 'byRound' && classFilter && classFilter != "global") {
