@@ -105,7 +105,7 @@ public class SettingService {
 
     public void backupAllFiles() throws IOException{
         String sourceFile = SettingUtils.getApplicationConfigPath() + "/pilots";
-        String date =  new SimpleDateFormat("yyyyMMdd").format(Calendar.getInstance().getTime());
+        String date =  new SimpleDateFormat("yyyyMMdd-HHmmss").format(Calendar.getInstance().getTime());
         FileOutputStream fos = new FileOutputStream(SettingUtils.getApplicationConfigPath() + "/" + "judge.backup."+ date + ".zip");
         ZipOutputStream zipOut = new ZipOutputStream(fos);
         File fileToZip = new File(sourceFile);
