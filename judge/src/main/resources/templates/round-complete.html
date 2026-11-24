@@ -102,7 +102,7 @@
       if (singleSequenceCompleted) {
         M.toast({ html: 'Known round completed as single-sequence.', classes: 'toastMessage', displayLength: 5000 });
       }
-      const audio = new Audio('/man/' + language + '/audio/roundcompleted.mp3');
+      const audio = new Audio('/man/common-audio/' + language + '/roundcompleted.mp3');
       audio.onerror = function () {};
       audio.play().catch(function () {});
 

@@ -40,6 +40,5 @@ public class CommandLineAppStartupRunner implements ApplicationRunner {
         logger.info ("Score Timeout: " + settingDTO.getScore_timeout());
         logger.info ("Score Poll Timeout: " + settingDTO.getScore_poll_timeout());
         logger.info ("Language: " + settingDTO.getLanguage());
-        logger.info ("Season Year Code: " + settingDTO.getSeasonYear());
     }
 }

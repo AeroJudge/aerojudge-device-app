@@ -197,8 +197,8 @@ public class SequenceService {
                 throw new IOException("Downloaded zip file is empty.");
             }
 
-            // Target directory: {configPath}/figures/en/event/
-            Path eventDir = Paths.get(SettingUtils.getApplicationConfigPath(), "figures", "en", "event");
+            // Target directory: {configPath}/figures/event/
+            Path eventDir = Paths.get(SettingUtils.getApplicationConfigPath(), "figures", "event");
 
             // Ensure event directory exists
             Files.createDirectories(eventDir);

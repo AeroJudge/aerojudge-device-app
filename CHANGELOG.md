@@ -8,9 +8,13 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
+- Read figures from the 2027 sequence-first layout: sequence images in `images/`, sequence recordings in a language folder, shared device audio in `common-audio/<language>/`, and event downloads extracted to `figures/event/`. Requires figures package 2027.0.
+- Take the Known sequence season from the installed figures package version (`2027.0` gives `27`); the `seasonYear` setting is no longer used and existing settings files need no change.
+- Play separate pilot list instructions for global (`instructions-global.mp3`) and round-by-round (`instructions-rbr.mp3`) lists.
 - Remember the selected B/C flight direction between pilots after figure 1 advances, carry it into sequence 2, and reset it when a new By Round round starts.
 - Allow a first-pilot Known sequence-mode correction in an active By Round round while preserving the saved sequence 1 and adjusting that pilot's next sequence.
 
+*PR #32*
 - Add device clock status and recovery, with timestamps for rounds and judged sequences.
 - Clean up modal and popover styling, keeping pilot-start controls visible with battery warnings.
 - Accept two-part app release versions while retaining existing three-part versions.
