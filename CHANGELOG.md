@@ -8,6 +8,7 @@ assembly and preserved-history migration details are documented in
 
 ## Latest:
 
+- Remember the selected B/C flight direction between pilots after figure 1 advances, carry it into sequence 2, and reset it when a new By Round round starts.
 - Allow a first-pilot Known sequence-mode correction in an active By Round round while preserving the saved sequence 1 and adjusting that pilot's next sequence.
 
 - Add device clock status and recovery, with timestamps for rounds and judged sequences.

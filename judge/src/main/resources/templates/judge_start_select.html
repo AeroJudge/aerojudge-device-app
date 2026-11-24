@@ -282,6 +282,14 @@
                         .attr('alt', label);
                 }
 
+                function restoreRememberedDirection() {
+                    dirflipInput.val(AeroJudgeFlightDirection.read() === 'C' ? 'true' : 'false');
+                    renderDirectionButton();
+                }
+
+                dirflipInput.closest('.pilot-start-content')
+                    .on('flightdirection:restore', restoreRememberedDirection);
+
                 dirToggleBtn.on('click', function(e) {
                     e.preventDefault();
                     var isCurrentlyC = String(dirflipInput.val()) === 'true';
