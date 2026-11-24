@@ -277,6 +277,10 @@
           && errObj.responseJSON.blocker === 'format_change_unsafe';
     }
 
+    function showSettingsMessage(message, color) {
+      M.toast({ html: $('<div>').text(message).html(), classes: color, displayLength: 10000 });
+    }
+
     // Update Local Settings (no Score contact)
     $("#updateLocalSettings").click(function (e) {
       e.preventDefault();
@@ -294,7 +298,7 @@
         dataType: "json",
         success: function (data) {
           if (data.result === "ok") {
-            M.toast({ html: 'Settings updated', classes: 'green', displayLength: 5000 });
+            showSettingsMessage(data.message || 'Settings updated', 'green');
           } else {
             M.toast({ html: 'Error: ' + data.message, classes: 'red', displayLength: 5000 });
           }
@@ -303,7 +307,8 @@
           if (isFormatChangeBlockedResponse(errObj)) {
             showFormatChangeBlocker(errObj.responseJSON);
           } else {
-            M.toast({ html: 'Error updating settings', classes: 'red', displayLength: 5000 });
+            showSettingsMessage(errObj.responseJSON && errObj.responseJSON.message
+                ? errObj.responseJSON.message : 'Error updating settings', 'red');
           }
         }
       });
