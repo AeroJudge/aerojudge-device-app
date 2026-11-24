@@ -85,7 +85,7 @@ and release assets must use the runtime filename `judge.jar`.
 For a manual device copy, rename the built JAR on the device:
 
 ```sh
-cp judge/target/judge-26.1.0.jar /var/opt/judge/bin/judge.jar
+cp judge/target/judge-26.2.0.jar /var/opt/judge/bin/judge.jar
 ```
 
 GitHub release automation publishes `judge.jar`. Figure and volume service
