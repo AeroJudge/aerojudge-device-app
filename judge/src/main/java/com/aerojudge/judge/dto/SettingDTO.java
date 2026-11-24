@@ -9,7 +9,6 @@ public class SettingDTO {
     private int score_poll_timeout = 2; //seconds
     private int score_timeout = 10; //seconds
     private String language = "en";
-    private int seasonYear = 26;
     
     public SettingDTO() {
     }
@@ -61,13 +60,6 @@ public class SettingDTO {
     }
     public void setLanguage(String language) {
         this.language = language;
-    }
-
-    public int getSeasonYear() {
-        return seasonYear;
-    }
-    public void setSeasonYear(int seasonYear) {
-        this.seasonYear = seasonYear;
     }
 
 }

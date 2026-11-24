@@ -3,10 +3,16 @@ package com.aerojudge.judge.utils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.springframework.stereotype.Component;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 
 @Component
 public class SettingUtils {
@@ -22,6 +28,24 @@ public class SettingUtils {
     public static String setApplicationConfigPath(String appConfigPath) {
         APPLICATION_CONFIG_PATH = appConfigPath;
         return (APPLICATION_CONFIG_PATH);
+    }
+
+    // Missing metadata means an unknown installed version, not a reason to reinstall.
+    public static String readPackageVersion(Path path) {
+        try {
+            JsonElement metadata = JsonParser.parseString(Files.readString(path));
+            if (!metadata.isJsonObject()) {
+                return null;
+            }
+            JsonElement version = metadata.getAsJsonObject().get("version");
+            if (version == null || !version.isJsonPrimitive() || !version.getAsJsonPrimitive().isString()) {
+                return null;
+            }
+            String value = version.getAsString();
+            return value.isBlank() ? null : value;
+        } catch (IOException | JsonParseException e) {
+            return null;
+        }
     }
 
     public static void zipFile(File fileToZip, String fileName, ZipOutputStream zipOut) throws IOException {

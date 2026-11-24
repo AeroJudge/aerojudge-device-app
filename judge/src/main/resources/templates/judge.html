@@ -167,8 +167,8 @@
                     <br>
                     <img id="my-svg" style="width:60vw; height:70vh;" class="figure-wrapper" alt="Figure Image"
                     th:attr="data-figure-index=${iterStat.index + 1}"
-                    th:src="@{/man/{language}/{sequenceFolderPath}/{index}{dirletter}.svg(language=${settings.language}, sequenceFolderPath=${sequenceFolderPath}, index=${iterStat.index + 1}, dirletter=${dirletter})}"
-                    onerror="this.onerror=null; this.src= sequencesBasePath + '/default/FAIL/fig_missing.svg';">
+                    th:src="@{/man/{sequenceFolderPath}/images/{index}{dirletter}.svg(sequenceFolderPath=${sequenceFolderPath}, index=${iterStat.index + 1}, dirletter=${dirletter})}"
+                    onerror="this.onerror=null; this.src= sequencesBasePath + '/default/FAIL/images/fig_missing.svg';">
                     </div>
                 </div>
             </div>
@@ -249,9 +249,10 @@
         const sequenceJson = JSON.parse( /*[[${sequencesjson}]]*/);
         var audio = new Audio();
 
-        const sequencesBasePath = "/man/" + /*[[${settings.language}]]*/ ;
+        const sequencesBasePath = "/man";
+        const language = /*[[${settings.language}]]*/ ;
         const sequenceFolderPath = /*[[${sequenceFolderPath}]]*/ ;
-        const audioBasePath = sequencesBasePath + "/audio";  // Score audio, Now Judging audio
+        const audioBasePath = "/man/common-audio/" + language;  // Score audio, Now Judging audio
         const sequenceType = /*[[${sequenceType}]]*/ ;  // Kept for backward compatibility
         let currentDirLetter = /*[[${dirletter}]]*/ 'B';
 
@@ -371,7 +372,7 @@
         function shortdescription(caller_index) {
             audio.pause();
             audio.currentTime = 0;
-            var audio_url = sequencesBasePath + '/' + sequenceFolderPath + '/fig' + ( score_index + caller_index + 1 ) + '.mp3';
+            var audio_url = sequencesBasePath + '/' + sequenceFolderPath + '/' + language + '/fig' + ( score_index + caller_index + 1 ) + '.mp3';
             audio = new Audio(audio_url);
             audio.volume = 1.0;
             audio.onerror = function() {
@@ -396,7 +397,7 @@
         }  
         
         function setLongDescription(caller_index) {
-            var audiolongurl = sequencesBasePath + '/' + sequenceFolderPath + '/call' + ( score_index + caller_index + 1 ) + '.mp3';
+            var audiolongurl = sequencesBasePath + '/' + sequenceFolderPath + '/' + language + '/call' + ( score_index + caller_index + 1 ) + '.mp3';
             audiolongd = new Audio(audiolongurl);
             audiolongd.onerror = function() {
                 console.warn('Call audio not found: ' + audiolongurl);
@@ -448,7 +449,7 @@
             $('.dirletter-label').text(currentDirLetter);
             $('.figure-wrapper').each(function () {
                 var figureIndex = $(this).attr('data-figure-index');
-                var imagePath = sequencesBasePath + '/' + sequenceFolderPath + '/' + figureIndex + currentDirLetter + '.svg';
+                var imagePath = sequencesBasePath + '/' + sequenceFolderPath + '/images/' + figureIndex + currentDirLetter + '.svg';
                 $(this).attr('src', imagePath);
             });
         }
@@ -640,7 +641,7 @@
                 // Numeric clips use three-digit integer tenths (figures package 2026.4).
                 audio.pause();
                 audio.currentTime = 0;
-                var audio_url = audioBasePath + '/score/' + String(Math.round(text * 10)).padStart(3, '0') + '.mp3';
+                var audio_url = audioBasePath + '/' + String(Math.round(text * 10)).padStart(3, '0') + '.mp3';
                 audio = new Audio(audio_url);
                 audio.volume = 1.0;
                 audio.play();
@@ -648,7 +649,7 @@
             } else if (text == 'BREAK') {
                 audio.pause();
                 audio.currentTime = 0;
-                var audio_url = audioBasePath + '/score/break.mp3';
+                var audio_url = audioBasePath + '/break.mp3';
                 audio = new Audio(audio_url);
                 audio.volume = 1.0;
                 audio.play();
@@ -656,7 +657,7 @@
             } else if (text == 'Not Observed') {
                 audio.pause();
                 audio.currentTime = 0;
-                var audio_url = audioBasePath + '/score/not_observed.mp3';
+                var audio_url = audioBasePath + '/not_observed.mp3';
                 audio = new Audio(audio_url);
                 audio.volume = 1.0;
                 audio.play();
@@ -664,7 +665,7 @@
             } else if (text == 'Deadline') {
                 audio.pause();
                 audio.currentTime = 0;
-                var audio_url = audioBasePath + '/score/deadline.mp3';
+                var audio_url = audioBasePath + '/deadline.mp3';
                 audio = new Audio(audio_url);
                 audio.volume = 1.0;
                 audio.play();
@@ -993,7 +994,7 @@
                 .attr('aria-pressed', String(figureFlags[index]));
             audio.pause();
             audio.currentTime = 0;
-            audio = new Audio(audioBasePath + '/score/' + (figureFlags[index] ? 'flagged' : 'flag_cleared') + '.mp3');
+            audio = new Audio(audioBasePath + '/' + (figureFlags[index] ? 'flagged' : 'flag_cleared') + '.mp3');
             audio.volume = 1.0;
             // Optional recordings arrive in future figures packages; missing clips must not affect flagging.
             audio.play().catch(function() {});

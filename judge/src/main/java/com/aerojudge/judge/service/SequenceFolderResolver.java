@@ -9,9 +9,11 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Resolves the folder path for figure assets using a 5-case fallback chain.
@@ -30,6 +32,8 @@ public class SequenceFolderResolver {
     private static final String FIGURES_PATH_BASE = SettingUtils.getApplicationConfigPath() + "/figures";
     public static final String FAIL_FOLDER = "default/FAIL";
     public static final String FREESTYLE_FOLDER = "default/FS";
+    // Release workflow version rule, two-digit year captured
+    private static final Pattern FIGURES_VERSION = Pattern.compile("20([0-9]{2})[.](0|[1-9][0-9]*)");
 
     // Class code mapping (2 chars)
     private static final Map<String, String> CLASS_CODES = Map.of(
@@ -44,9 +48,6 @@ public class SequenceFolderResolver {
     @Autowired
     private ScheduleService scheduleService;
 
-    @Autowired
-    private SettingService settingService;
-
     /**
      * Resolves the folder path for figures using 5-case logic.
      *
@@ -54,7 +55,7 @@ public class SequenceFolderResolver {
      * @param roundType    e.g., "KNOWN", "UNKNOWN", "FREESTYLE"
      * @param roundNumber  e.g., 4
      * @param sequenceType e.g., "std" (for fallback variant when short_desc blank)
-     * @return folder path relative to /man/en/, e.g., "default/SPK_26S"
+     * @return folder path relative to /man/, e.g., "default/SPK_27S"
      */
     public String resolve(String pilotClass, String roundType,
                           int roundNumber, String sequenceType) {
@@ -250,8 +251,8 @@ public class SequenceFolderResolver {
     }
 
     /**
-     * Derive folder name for KNOWN sequences using config year.
-     * Example: SPORTSMAN + std -> SPK_26S (where 26 comes from settings)
+     * Derive folder name for KNOWN sequences using the season year of the installed figures package.
+     * Example: SPORTSMAN + std -> SPK_27S (figures package 2027.0)
      *
      * @param pilotClass e.g., "SPORTSMAN"
      * @param variantOrSeqType "S", "A", "std", or "alt"
@@ -264,17 +265,14 @@ public class SequenceFolderResolver {
             return null;
         }
 
-        String year;
-        try {
-            year = String.valueOf(settingService.getSettings().getSeasonYear());
-        } catch (IOException e) {
-            logger.warn("Could not load season year from settings", e);
+        // Season year comes from the installed figures package, e.g. "2027.0" -> "27".
+        String version = SettingUtils.readPackageVersion(Path.of(FIGURES_PATH_BASE, "package.json"));
+        Matcher match = (version != null) ? FIGURES_VERSION.matcher(version) : null;
+        if (match == null || !match.matches()) {
+            logger.warn("Season year unavailable: figures package version missing or invalid ({})", version);
             return null;
         }
-        if (year == null) {
-            logger.warn("Season year not a proper value in settings");
-            return null;
-        }
+        String year = match.group(1);
 
         // Normalize variant
         String variant;
@@ -306,7 +304,7 @@ public class SequenceFolderResolver {
 
     /**
      * Check if folder exists on disk.
-     * @param relativePath path relative to figures/en/
+     * @param relativePath path relative to figures/
      * @return true if folder exists
      */
     public boolean folderExists(String relativePath) {
@@ -321,12 +319,6 @@ public class SequenceFolderResolver {
      * @return figures path
      */
     public String getFiguresPath() {
-        try {
-            String language = settingService.getSettings().getLanguage();
-            return FIGURES_PATH_BASE + "/" + language;
-        } catch (IOException e) {
-            logger.error("Failed to load settings for language, defaulting to 'en'", e);
-            return FIGURES_PATH_BASE + "/en";
-        }
+        return FIGURES_PATH_BASE;
     }
 }

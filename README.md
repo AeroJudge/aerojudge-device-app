@@ -57,8 +57,7 @@ eg.
   "line_number":1,
   "score_host":"192.168.8.100",
   "score_http_port":80,
-  "language":"en",
-  "seasonYear":26
+  "language":"en"
 }
 ```
 
