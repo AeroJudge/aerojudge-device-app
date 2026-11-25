@@ -82,6 +82,10 @@ cd judge
 Local Maven builds create a versioned JAR in `judge/target/`. Device installs
 and release assets must use the runtime filename `judge.jar`.
 
+The app version is an app release line (`MAJOR.MINOR.PATCH`, for example
+`26.2.0`). The major number is not a year; the contest season comes from the
+installed figures package version.
+
 For a manual device copy, rename the built JAR on the device:
 
 ```sh
