@@ -41,7 +41,7 @@ PCB revision `3.61+`.
 1. VSCode
 2. Docker Desktop
 3. Score >= v4.71 with services enabled and started
-4. Java 17 or later (Java 21 works fine)
+4. Java 17 or later (Java 21 or 25 works fine)
 
 ### Run AeroJudge Device App Locally
 
