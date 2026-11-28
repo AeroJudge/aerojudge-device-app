@@ -173,9 +173,8 @@
             <input type="hidden" th:id="'sequenceType'+${pilot.index}" name="sequenceType" th:value="${comp.sequenceType}" />
             <div class="row">
                 <div class="col s12 dir-toggle-wrap">
-                    <button type="button" class="dir-toggle-btn" th:id="'btn_dirflip'+${pilot.index}" aria-label="Form B, wind direction left. Tap to change.">
-                        <img src="/form-b-wind.svg" alt="Form B, wind direction left" />
-                        <span class="dir-hint">Tap to change</span>
+                    <button type="button" class="dir-toggle-btn" th:id="'btn_dirflip'+${pilot.index}" aria-label="Form B, wind direction left.">
+                        <img src="/form-b-wind-ctc.svg" alt="Form B, wind direction left" />
                     </button>
                 </div>
             </div>
@@ -277,8 +276,8 @@
                     // Match Aresti wind arrows; the selected figure form is unchanged.
                     var label = isC ? 'Form C, wind direction right' : 'Form B, wind direction left';
                     dirToggleBtn.attr('aria-pressed', String(isC))
-                        .attr('aria-label', label + '. Tap to change.');
-                    dirToggleBtn.find('img').attr('src', isC ? '/form-c-wind.svg' : '/form-b-wind.svg')
+                        .attr('aria-label', label + '.');
+                    dirToggleBtn.find('img').attr('src', isC ? '/form-c-wind-ctc.svg' : '/form-b-wind-ctc.svg')
                         .attr('alt', label);
                 }
 
