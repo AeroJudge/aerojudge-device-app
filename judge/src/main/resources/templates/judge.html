@@ -86,12 +86,26 @@
         }
 
         .btn-change-dir {
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            height: 36px;
-            line-height: 36px;
-            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            cursor: pointer;
+        }
+
+        .btn-change-dir:focus-visible {
+            outline: 2px solid #1565c0;
+            outline-offset: 2px;
+        }
+
+        .btn-change-dir-image {
+            display: block;
+            width: 360px;
+            max-width: calc(100vw - 24px);
+            height: auto;
         }
 
         /* Shared framing, with the intentional danger border and large warning icon. */
@@ -174,7 +188,9 @@
             </div>
             <div class="row dir-toggle-row" th:if="${(roundType eq 'KNOWN' or roundType eq 'UNKNOWN') and iterStat.index == 0}">
                 <div class="col s4 center-align" style="margin-left: 10px;">
-                    <a class="waves-effect waves-light btn blue darken-1 btn-change-dir" id="btnChangeDir" href="#!">Change Dir</a>
+                    <button type="button" class="btn-change-dir" id="btnChangeDir" aria-label="Change wind direction">
+                        <img class="btn-change-dir-image" src="/form-b-wind-ctc.svg" alt="">
+                    </button>
                 </div>
             </div>
             <div class="row">
@@ -445,6 +461,7 @@
 
         function updateDirectionUI() {
             $('.dirletter-label').text(currentDirLetter);
+            $('#btnChangeDir img').attr('src', '/form-' + currentDirLetter.toLowerCase() + '-wind-ctc.svg');
             $('.figure-wrapper').each(function () {
                 var figureIndex = $(this).attr('data-figure-index');
                 var imagePath = sequencesBasePath + '/' + sequenceFolderPath + '/' + figureIndex + currentDirLetter + '.svg';
